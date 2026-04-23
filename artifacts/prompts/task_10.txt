@@ -1,0 +1,15 @@
+Task: deliver interim requirement: p50/p95 latency numbers from at least 20 real email and SMS interactions pulled
+
+Requirements:
+- production ready code
+- proper structure
+- include error handling
+
+DO NOT:
+- add unnecessary features
+
+
+Previous Run Signals:
+- status: pass
+- pass@1: 1.0
+- use these only as guidance; do not overfit to one run

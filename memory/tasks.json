@@ -1,0 +1,54 @@
+[
+  {
+    "task": "summarize interim submission requirements from input instructions",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: README.md at root with architecture diagram, setup instructions, and",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: agent/ directory containing all agent source files, email handler (Resend or",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: eval/ directory containing \u03c4\u00b2-Bench harness source, score_log.json with at least",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: baseline.md covering what you reproduced, your confidence interval, cost per run,",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: Architecture overview and key design decisions",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: Production stack status: Resend or MailerSend (email, primary channel), Africa's",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: Enrichment pipeline status: Crunchbase ODM firmographics, job-post velocity",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: Competitor gap brief status: top-quartile comparison pipeline generating",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: \u03c4\u00b2-Bench baseline score and methodology",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: p50/p95 latency numbers from at least 20 real email and SMS interactions pulled",
+    "tool": "copilot"
+  },
+  {
+    "task": "deliver interim requirement: What is working, what is not, and what the plan is for remaining days",
+    "tool": "copilot"
+  },
+  {
+    "task": "write interim submission report and evidence mapping",
+    "tool": "copilot"
+  }
+]

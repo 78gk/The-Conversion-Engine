@@ -1,0 +1,10 @@
+project_name: "The Conversion Engine"
+
+constraints:
+  budget: low
+  latency: medium
+
+tools:
+  coding: copilot
+  reasoning: antigravity
+  debugging: codex

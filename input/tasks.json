@@ -1,0 +1,14 @@
+[
+  {
+    "task": "read input/instructions.pdf and summarize requirements",
+    "tool": "antigravity"
+  },
+  {
+    "task": "build system based on requirements",
+    "tool": "copilot"
+  },
+  {
+    "task": "write evaluation script",
+    "tool": "copilot"
+  }
+]

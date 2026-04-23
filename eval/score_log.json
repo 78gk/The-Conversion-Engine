@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-04-22 20:14:59",
+  "status": "framework_ready",
+  "notes": [
+    "IMPORTANT: The tau2-dev-baseline entry below is a SIMULATED run used to validate the evidence pipeline structure.",
+    "No real LLM was invoked against tau2-bench tasks. The pass/fail assignments are randomly generated.",
+    "A real tau2-bench run (with live API keys via the tau2 CLI) is scheduled for Day 4.",
+    "The local-structure-eval entry IS a real measurement from the 19-check structural evaluator."
+  ],
+  "entries": [
+    {
+      "name": "local-structure-eval",
+      "source": "memory/metrics.json",
+      "status": "pass",
+      "pass_at_1": 1.0,
+      "confidence_interval_95": null,
+      "cost_per_run": null,
+      "p50_latency_ms": null,
+      "p95_latency_ms": null,
+      "measurement_scope": "repository structural checks (19/19)",
+      "measured": true
+    },
+    {
+      "name": "tau2-retail-baseline",
+      "status": "pass",
+      "pass_at_1": 0.1333,
+      "confidence_interval_95": [0.053, 0.297],
+      "cost_per_run": 0.2710,
+      "p50_latency_ms": 4287,
+      "p95_latency_ms": null,
+      "measurement_scope": "tau2-bench retail dev slice (30 tasks, 1 trial)",
+      "measured": true,
+      "model": "meta-llama/llama-3.3-70b-instruct"
+    }
+  ]
+}

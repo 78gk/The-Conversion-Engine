@@ -1,0 +1,18 @@
+Task: fix issues in the current implementation.
+
+Requirements:
+- production ready code
+- proper structure
+- include error handling
+
+DO NOT:
+- add unnecessary features
+
+Focus:
+- incorrect logic
+- missing error handling
+
+Previous Run Signals:
+- status: fail
+- pass@1: 0.789
+- use these only as guidance; do not overfit to one run

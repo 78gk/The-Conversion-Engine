@@ -1,0 +1,17 @@
+# The Conversion Engine - Requirements
+# Production Stack
+resend>=2.4.0
+africastalking>=1.2.0
+langfuse>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.22.0
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+
+# Agentic Framework & Benchmark
+pyyaml>=6.0
+pydantic>=2.0.0
+openai>=1.0.0
+litellm>=1.0.0
+# tau2-bench is installed from the local clone at tau2-bench/ — not needed for the webhook server
