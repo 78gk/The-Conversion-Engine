@@ -1,0 +1,11 @@
+name,funding_stage,category_list,employee_count,city,country_code,founded_on
+Acme Corp,Series B,Artificial Intelligence|SaaS,51-100,San Francisco,USA,2019-03-15
+SynthCo Inc,Series A,Machine Learning|Enterprise Software,11-50,Austin,USA,2021-06-01
+DataBridge Solutions,Series C,Data Analytics|Business Intelligence,201-500,New York,USA,2017-09-20
+NeuralPath AI,Seed,Deep Learning|Computer Vision,1-10,London,GBR,2023-01-10
+CloudOps Ltd,Series D,Cloud Infrastructure|DevOps,501-1000,Seattle,USA,2015-04-22
+HealthTech AI,Series B,Healthcare|Artificial Intelligence,101-200,Boston,USA,2020-02-14
+FinSignal,Series A,FinTech|Machine Learning,51-100,Chicago,USA,2020-11-30
+RetailMind,Series B,Retail|Computer Vision,101-200,Atlanta,USA,2018-07-05
+LogisticsAI,Series C,Logistics|Supply Chain,201-500,Dallas,USA,2016-12-01
+EduLearn,Seed,EdTech|NLP,1-10,Toronto,CAN,2022-08-15

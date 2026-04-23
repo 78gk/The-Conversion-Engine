@@ -32,6 +32,13 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
+# Downstream handlers — called when inbound events require pipeline action
+from agent.integrations import (
+    handle_email_reply,
+    handle_sms_reply,
+    update_hubspot_lifecycle_stage,
+)
+
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
@@ -94,8 +101,11 @@ async def resend_webhook(request: Request) -> JSONResponse:
 
     Register at: resend.com/webhooks → add endpoint → select events
     """
-    body = await request.body()
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception:
+        LOGGER.warning("Resend webhook: malformed JSON payload received")
+        return JSONResponse({"status": "error", "reason": "malformed_payload"}, status_code=400)
 
     event_type = payload.get("type", "unknown")
     email_data = payload.get("data", {})
@@ -103,10 +113,9 @@ async def resend_webhook(request: Request) -> JSONResponse:
     _log_event("resend", event_type, payload)
 
     if event_type == "email.replied":
-        # Trigger qualification flow
-        prospect_email = email_data.get("from")  # who replied
+        prospect_email = email_data.get("from", "unknown")
         LOGGER.info("Email reply from prospect: %s — triggering qualification", prospect_email)
-        # TODO Day 5: trigger ICP re-evaluation and Cal.com booking
+        handle_email_reply(prospect_email, email_data)
         return JSONResponse({"status": "reply_received", "prospect": prospect_email})
 
     if event_type == "email.bounced":
@@ -140,9 +149,9 @@ async def africas_talking_webhook(request: Request) -> JSONResponse:
     if event_type == "sms.inbound":
         sender = payload.get("from", "")
         text = payload.get("text", "")
-        LOGGER.info("SMS reply from %s: '%s' — logging for qualification", sender, text[:80])
-        # TODO Day 5: parse reply intent and update HubSpot contact
-        return JSONResponse({"status": "inbound_logged", "from": sender})
+        LOGGER.info("SMS reply from %s: '%s' — routing to qualification handler", sender, text[:80])
+        handle_sms_reply(sender, text)
+        return JSONResponse({"status": "inbound_routed", "from": sender})
 
     delivery_status = payload.get("status", "")
     LOGGER.info("SMS delivery status: %s for %s", delivery_status, payload.get("to"))
@@ -184,9 +193,11 @@ async def calcom_webhook(
     _log_event("calcom", trigger, payload)
 
     if trigger == "BOOKING_CREATED":
+        booking_uid = booking.get("uid", "")
         LOGGER.info("Discovery call booked for %s at %s", attendee_email, booking.get("startTime"))
-        # TODO Day 5: update HubSpot contact lifecycle stage to "scheduled"
-        return JSONResponse({"status": "booking_logged", "attendee": attendee_email})
+        if attendee_email:
+            update_hubspot_lifecycle_stage(attendee_email, "scheduled", booking_uid)
+        return JSONResponse({"status": "booking_confirmed", "attendee": attendee_email})
 
     if trigger == "BOOKING_CANCELLED":
         LOGGER.info("Booking cancelled for %s", attendee_email)

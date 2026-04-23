@@ -12,7 +12,7 @@
 | Client | Tenacious Consulting and Outsourcing |
 | Submission date | 2026-04-22 |
 | Repository URL | https://github.com/78gk/The-Conversion-Engine |
-| Branch / Commit | [Add Branch/Commit after push] |
+| Branch / Commit | main / fd61f66 |
 | Primary report artifact | `artifacts/reports/INTERIM_DAY3_REPORT.md` |
 | Evaluation harness | `tau2-bench` (cloned: `tau2-bench/`) |
 | Score log | `eval/score_log.json` |
@@ -116,11 +116,11 @@ The production stack is running in **sandboxed/simulated mode** for the interim 
 
 | Layer | Tool | Status | Evidence |
 |---|---|---|---|
-| Email (primary) | Resend (free tier) | ✅ Sandboxed — single test email routed to internal sink | `agent/conversion_engine.py` → `send_email()` |
-| SMS (secondary) | Africa's Talking sandbox | ✅ Sandboxed — virtual short code registered; messages routed to staff sink | `conversion_engine.py` → `send_sms()` |
-| CRM | HubSpot Developer Sandbox | ✅ Sandboxed — MCP server wired; contact write and enrichment-timestamp fields mapped | `conversion_engine.py` → `write_hubspot_contact()` |
-| Calendar | Cal.com (Docker Compose) | ✅ Sandboxed — booking flow returns mock confirmation URL | `conversion_engine.py` → `book_discovery_call()` |
-| Observability | Langfuse cloud free tier | ✅ Project created; per-trace cost spans wired to trace_log | `eval/trace_log.jsonl` cost_usd per trace |
+| Email (primary) | Resend (free tier) | ✅ Sandboxed — outbound send and reply webhook both exercised | `artifacts/logs/synthco_thread.json` step `email_send`; `artifacts/logs/webhook_events.jsonl` `email.replied` |
+| SMS (secondary) | Africa's Talking sandbox | ✅ Sandboxed — inbound and delivery callbacks recorded; warm-lead gate enforced | `artifacts/logs/webhook_events.jsonl` `sms.inbound` and `sms.delivery`; `agent/integrations.py` `send_sms_warm_lead_only()` |
+| CRM | HubSpot Developer Sandbox | ✅ Sandboxed — contact write includes ICP segment, enrichment timestamp, and signal fields | `artifacts/logs/synthco_thread.json` step `hubspot_contact_write`; `agent/integrations.py` `write_hubspot_contact()` |
+| Calendar | Cal.com (Docker Compose) | ✅ Sandboxed — booking flow returns mock confirmation URL and updates CRM on booking events | `artifacts/logs/synthco_thread.json` step `calcom_booking`; `artifacts/logs/webhook_events.jsonl` `BOOKING_CREATED`; `agent/webhook.py` `calcom_webhook()` |
+| Observability | Langfuse cloud free tier | ✅ Project created; local trace artifact written per interaction | `artifacts/logs/synthco_thread.json` step `langfuse_trace`; `eval/trace_log.jsonl` |
 | LLM backbone (dev) | OpenRouter / Qwen3-Next | ✅ Routed for prompt execution; spend tracked | `config.yaml` → `llm_provider: openrouter` |
 
 **Channel priority implemented:** Email is primary outreach; SMS is sandboxed for warm-lead scheduling coordination only; voice is deferred to final submission bonus tier.
@@ -253,24 +253,24 @@ The competitor gap brief pipeline compares the target prospect against the top q
 | Benchmark | τ²-Bench (sierra-research/tau2-bench, cloned 2026-04-22) |
 | Domain | Retail |
 | Split | Dev slice (30-task dev; working on 20-task subset for interim) |
-| Model | Sandboxed simulation (dev-tier proxy) |
+| Model | `meta-llama/llama-3.3-70b-instruct` |
 | Trials per task | 1 (interim baseline) |
-| Tasks evaluated | 20 |
+| Tasks evaluated | 30 |
 | Held-out slice | Not yet received (20-task sealed slice — provisioned Day 5) |
 
 ### Results
 
 | Metric | Value | Source |
 |---|---|---|
-| pass@1 | **pending** | `eval/score_log.json` (status: simulated) |
-| 95% Confidence Interval | **pending** | Wilson score interval (requires real run) |
-| Cost per run | **pending** | Mean of `cost_usd` (requires real run) |
-| p50 latency | **pending** | Median of `execution_time_ms` (requires real run) |
-| p95 latency | **pending** | 95th percentile of `execution_time_ms` |
+| pass@1 | **0.1333** | `eval/score_log.json` (`tau2-retail-baseline`) |
+| 95% Confidence Interval | **[0.053, 0.297]** | `eval/score_log.json` |
+| Cost per run | **$0.2710** | `eval/score_log.json` |
+| p50 latency | **4,287 ms** | `eval/score_log.json` |
+| p95 latency | **not recorded** | `eval/score_log.json` |
 | Published τ²-Bench ceiling | ~42% (leaderboard, retail) | sierra-research/tau2-bench README |
-| Delta vs. ceiling | **N/A** | Pending real measurement |
+| Delta vs. ceiling | **~28.7 points below ceiling** | Derived from measured pass@1 |
 
-**Honesty note:** The `eval/trace_log.jsonl` and `eval/score_log.json` files exist and are structured correctly, but the traces contain **simulated placeholder data** (randomly assigned pass/fail, generic step content). A real τ²-bench run — invoking the `tau2 run` CLI against an actual LLM — has not yet been executed. The score log marks the `tau2-dev-baseline` entry as `status: simulated` with `measured: false`. The real run is the Day 4 first priority.
+**Honesty note:** The `eval/trace_log.jsonl` file still contains the 20 simulated trajectories used to validate the evidence pipeline, while `eval/score_log.json` now records a measured `tau2-retail-baseline` entry. The local structural evaluator still reports 19/19 passing.
 
 ### Methodology
 
@@ -322,13 +322,13 @@ Latency data pulled directly from `eval/trace_log.jsonl` (20 traces). All values
 |---|---|---|
 | Phase orchestrator (plan→build→eval→improve→report) | ✅ Full loop passing | `python scripts/run.py` completes; `memory/state.json` cycles correctly |
 | Structural evaluation (19/19 checks) | ✅ All pass | `memory/metrics.json` → pass@1=1.0, 19/19 |
-| τ²-Bench baseline reproduction | ⚠️ Framework ready, real run pending | `eval/score_log.json` (status: simulated) |
+| τ²-Bench baseline reproduction | ✅ Measured baseline recorded | `eval/score_log.json` (`tau2-retail-baseline`) |
 | Prompt generation pipeline | ✅ 13 task prompts generated | `artifacts/prompts/task_0.txt … task_12.txt` |
 | Signal enrichment pipeline (sandboxed) | ✅ hiring_signal_brief produced for SynthCo | `§3.2` above |
 | Competitor gap brief pipeline (sandboxed) | ✅ competitor_gap_brief.json produced for SynthCo | `§4` above |
 | ICP classifier with abstention | ✅ Segment assignment + confidence score for SynthCo | Segment 3, high confidence |
 | AI maturity scoring (0–3) | ✅ Score + per-signal justification | SynthCo: score=2, confidence=medium |
-| Email handler (sandboxed) | ✅ Wired, routes to sink | `artifacts/code/conversion_engine.py` |
+| Email handler (sandboxed) | ✅ Wired, routes to sink | `artifacts/logs/synthco_thread.json` step `email_send` |
 | SMS handler (sandboxed) | ✅ Wired, Africa's Talking sandbox | `conversion_engine.py` |
 | HubSpot contact write (sandboxed) | ✅ Fields mapped, enrichment timestamp present | `conversion_engine.py` |
 | Cal.com booking (sandboxed) | ✅ Mock confirmation URL returned | `conversion_engine.py` |
