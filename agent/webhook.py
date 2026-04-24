@@ -63,7 +63,7 @@ def _log_event(source: str, event_type: str, data: dict[str, Any]) -> None:
     try:
         EVENTS_LOG.parent.mkdir(parents=True, exist_ok=True)
         with open(EVENTS_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
+            f.write(json.dumps(entry, default=str) + "\n")
     except OSError as exc:
         LOGGER.error("Failed to log webhook event: %s", exc)
 
