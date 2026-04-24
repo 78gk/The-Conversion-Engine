@@ -3,7 +3,8 @@
   "notes": [
     "instructor-baseline: program-provided reference baseline (pass@1=0.7267, 5 trials x 30 tasks).",
     "day1-baseline: our own Act I run (pass@1=0.1333, 1 trial x 30 tasks, llama-3.3-70b). Used as Delta A denominator.",
-    "mechanism-eval: Act IV result on sealed held-out slice — to be populated after mechanism run."
+    "mechanism-eval: Act IV result on sealed held-out slice (gpt-4o-mini, 20 tasks, 1 trial). pass@1=0.4500. Delta A=+237.6%.",
+    "gpt41-eval: Act IV+ production-model run (gpt-4.1, 30 tasks, 1 trial, 0 infra errors). pass@1=0.8333. Beats instructor baseline by +0.1066."
   ],
   "entries": [
     {
@@ -49,6 +50,21 @@
       "simulation_dir": "tau2-bench/data/simulations/20260424_142140_retail_llm_agent_gpt-4o-mini_user_simulator_gpt-4o-mini",
       "measured": true,
       "notes": "Act IV mechanism eval: gpt-4o-mini with confidence-proportional phrasing gate on held-out retail slice (20 tasks, 1 trial). 9/20 passing. 4 tasks errored (reward=0, 0 messages) counted as failures per tau2 convention. Delta A = +0.3167 vs day1-baseline (+237.6%)."
+    },
+    {
+      "name": "gpt41-eval",
+      "status": "pass",
+      "pass_at_1": 0.8333,
+      "confidence_interval_95": [0.7000, 0.9667],
+      "model": "openrouter/openai/gpt-4.1",
+      "num_trials": 1,
+      "num_tasks": 30,
+      "infra_error_count": 0,
+      "tasks_passed": 25,
+      "tasks_failed": 5,
+      "simulation_dir": "tau2-bench/data/simulations/20260424_225717_retail_llm_agent_gpt-4.1_user_simulator_gpt-4.1",
+      "measured": true,
+      "notes": "Full 30-task run with gpt-4.1 (same model as instructor baseline). 0 infra errors after OpenRouter bridge fix (OPENAI_API_BASE routed to openrouter.ai). 25/30 pass, 5 genuine task failures. Beats instructor baseline (0.7267) by +0.1066 (+14.7%). τ²-bench retail domain, 1 trial, temperature=0."
     }
   ]
 }

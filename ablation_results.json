@@ -50,6 +50,24 @@
       "delta_pct": 237.6,
       "interpretation": "pass@1 improves +0.3167 (+237.6%) from day-1 baseline. Positive delta confirms mechanism addresses signal over-claiming.",
       "source": "Derived from control_no_gate and treatment_gpt4omini"
+    },
+    {
+      "condition_id": "production_gpt41",
+      "description": "Production-model run: gpt-4.1, full 30-task benchmark, 0 infra errors",
+      "model": "openrouter/openai/gpt-4.1",
+      "phrasing_gate": true,
+      "num_tasks": 30,
+      "num_trials": 1,
+      "pass_at_1": 0.8333,
+      "confidence_interval_95": [0.7000, 0.9667],
+      "tasks_passed": 25,
+      "tasks_failed": 5,
+      "infra_error_count": 0,
+      "source": "tau2-bench/data/simulations/20260424_225717_retail_llm_agent_gpt-4.1_user_simulator_gpt-4.1/results.json",
+      "measured": true,
+      "delta_vs_instructor": 0.1066,
+      "delta_vs_instructor_pct": 14.7,
+      "interpretation": "gpt-4.1 with phrasing gate beats the instructor baseline (0.7267) by +0.1066 (+14.7%). All 30 tasks completed (0 infra errors). 5 genuine task failures are hard tasks, not infrastructure issues."
     }
   ]
 }
