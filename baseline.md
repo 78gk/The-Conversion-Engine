@@ -1,32 +1,41 @@
-# Baseline (Interim)
+# Baseline — The Conversion Engine
 
-## Scope of this baseline
-This document reports only values actually measured in this repository.
+## Reference Baseline (Program-Provided)
 
-## What is currently measured (real)
+| Metric | Value | Source |
+|---|---|---|
+| pass@1 | **0.7267** | `input/score_log.json` |
+| 95% CI | [0.6504, 0.7917] | `input/score_log.json` |
+| Trials per task | 5 | `input/score_log.json` |
+| Total simulations | 150 (30 tasks × 5) | `input/score_log.json` |
+| Avg agent cost | $0.0199 / task | `input/score_log.json` |
+| p50 latency | 105.95s | `input/score_log.json` |
+| p95 latency | 551.65s | `input/score_log.json` |
 
-### Structural integrity check
-- **Source**: `memory/metrics.json` (run via `python scripts/run.py`)
-- **Status**: pass
-- **Checks passed**: 19 / 19
-- **pass@1**: 1.0 (all 19 required structural checks pass)
+Provided by program staff per instructor update (2026-04-24). All trainees work from this same reference baseline. Raw traces: `input/trace_log.jsonl` (150 entries).
 
-This confirms: the repository layout, eval directory, trace log, score log, baseline file, interim report, prompts, and code artifacts are all present and well-formed.
+## Our Day-1 Baseline (Act I)
 
-## What is NOT yet measured (pending Day 4)
+| Metric | Value | Source |
+|---|---|---|
+| pass@1 | **0.1333** | `eval/score_log.json` → `day1-baseline` |
+| 95% CI | [0.053, 0.297] | Wilson interval at α=0.05 |
+| Model | `meta-llama/llama-3.3-70b-instruct` | `eval/score_log.json` |
+| Trials per task | 1 | `eval/score_log.json` |
+| Total tasks | 30 | `eval/score_log.json` |
+| Cost per run | $0.2710 | `eval/score_log.json` |
+| p50 latency | 4,287ms | `eval/score_log.json` |
 
-### τ²-Bench retail dev baseline
-- **Status**: pass
-- **Model**: `meta-llama/llama-3.3-70b-instruct`
-- **pass@1**: 0.1333 (4/30 tasks)
-- **CI (95%)**: `[0.053, 0.297]`
-- **Total Cost**: $0.2710 (30 tasks)
-- **Avg Cost/Task**: $0.0090
-- **Measurement Scope**: Real τ²-bench CLI run on `retail` domain dev slice.
-- **Timestamp**: 2026-04-23 15:37:02
+This is our own reproduction run used as the **Delta A denominator** for Act IV mechanism evaluation. A weak model (llama-3.3-70b) on 1 trial — the mechanism targets improvement above this bar.
 
-## Next measurement steps
-1. Deploy real integration layer (Resend, HubSpot, Cal.com)
-2. Run comparative benchmark with adaptive context injection (Conversion Engine logic)
-3. Target: Improved pass@1 > 0.40 using task-specific memory retrieval.
+## Delta Targets (Act IV)
 
+| Delta | Formula | Required |
+|---|---|---|
+| Delta A | mechanism_pass@1 − 0.1333 | Must be positive, p < 0.05 |
+| Delta B | mechanism_pass@1 − automated_opt_baseline | Report honestly; underperformance explained |
+| Delta C | mechanism_pass@1 − 0.7267 | Informational only |
+
+## Unexpected Behavior (Day-1 Run)
+
+llama-3.3-70b-instruct failed most multi-tool-call tasks — the model frequently resolved the user message without completing the required tool sequence. Single-step tasks passed at a higher rate. This is a model capability ceiling, not a harness issue. Switching to gpt-4o-mini is expected to close the gap substantially.

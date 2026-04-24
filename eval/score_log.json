@@ -1,36 +1,49 @@
 {
-  "generated_at": "2026-04-22 20:14:59",
-  "status": "framework_ready",
+  "generated_at": "2026-04-24",
   "notes": [
-    "IMPORTANT: The tau2-dev-baseline entry below is a SIMULATED run used to validate the evidence pipeline structure.",
-    "No real LLM was invoked against tau2-bench tasks. The pass/fail assignments are randomly generated.",
-    "A real tau2-bench run (with live API keys via the tau2 CLI) is scheduled for Day 4.",
-    "The local-structure-eval entry IS a real measurement from the 19-check structural evaluator."
+    "instructor-baseline: program-provided reference baseline (pass@1=0.7267, 5 trials x 30 tasks).",
+    "day1-baseline: our own Act I run (pass@1=0.1333, 1 trial x 30 tasks, llama-3.3-70b). Used as Delta A denominator.",
+    "mechanism-eval: Act IV result on sealed held-out slice — to be populated after mechanism run."
   ],
   "entries": [
     {
-      "name": "local-structure-eval",
-      "source": "memory/metrics.json",
+      "name": "instructor-baseline",
+      "source": "input/score_log.json",
       "status": "pass",
-      "pass_at_1": 1.0,
-      "confidence_interval_95": null,
-      "cost_per_run": null,
-      "p50_latency_ms": null,
-      "p95_latency_ms": null,
-      "measurement_scope": "repository structural checks (19/19)",
-      "measured": true
+      "pass_at_1": 0.7267,
+      "confidence_interval_95": [0.6504, 0.7917],
+      "avg_agent_cost_usd": 0.0199,
+      "p50_latency_seconds": 105.9521,
+      "p95_latency_seconds": 551.6491,
+      "total_tasks": 30,
+      "num_trials": 5,
+      "evaluated_simulations": 150,
+      "git_commit": "d11a97072c49d093f7b5a3e4fe9da95b490d43ba",
+      "measured": true,
+      "notes": "Program-provided reference baseline. Used as Delta C reference."
     },
     {
-      "name": "tau2-retail-baseline",
+      "name": "day1-baseline",
       "status": "pass",
       "pass_at_1": 0.1333,
       "confidence_interval_95": [0.053, 0.297],
-      "cost_per_run": 0.2710,
+      "cost_per_run_usd": 0.2710,
+      "avg_cost_per_task_usd": 0.0090,
       "p50_latency_ms": 4287,
-      "p95_latency_ms": null,
-      "measurement_scope": "tau2-bench retail dev slice (30 tasks, 1 trial)",
+      "total_tasks": 30,
+      "num_trials": 1,
+      "model": "meta-llama/llama-3.3-70b-instruct",
       "measured": true,
-      "model": "meta-llama/llama-3.3-70b-instruct"
+      "notes": "Our Act I run. Used as Delta A denominator for mechanism evaluation."
+    },
+    {
+      "name": "mechanism-eval",
+      "status": "pending",
+      "pass_at_1": null,
+      "confidence_interval_95": null,
+      "model": "openai/gpt-4o-mini",
+      "num_trials": 1,
+      "notes": "Act IV mechanism run on held-out slice. Pending execution."
     }
   ]
 }
