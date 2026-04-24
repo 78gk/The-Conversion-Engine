@@ -64,6 +64,7 @@ class EnrichmentArtifact:
     ai_maturity_confidence: float
     icp_segment: int
     icp_confidence: float
+    icp_segment_name: str = ""
     enriched_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
     def to_dict(self) -> dict[str, Any]:
@@ -464,6 +465,89 @@ def compute_icp_segment(ai_score: float) -> tuple[int, float]:
     return 5, 0.50
 
 
+def _parse_headcount(employee_count_str: str) -> tuple[int, int]:
+    """Parse '11-50' style employee count into (min, max). Returns (0, 0) on failure."""
+    s = str(employee_count_str).strip()
+    if "+" in s:
+        try:
+            return int(s.replace("+", "")), 999_999
+        except ValueError:
+            return 0, 0
+    if "-" in s:
+        parts = s.split("-", 1)
+        try:
+            return int(parts[0]), int(parts[1])
+        except (ValueError, IndexError):
+            return 0, 0
+    try:
+        v = int(s)
+        return v, v
+    except ValueError:
+        return 0, 0
+
+
+def _days_since_most_recent_layoff(layoff_value: dict) -> int:
+    """Return days since the most recent layoff event, or 999 if none recorded."""
+    events = layoff_value.get("layoff_events", [])
+    if not events:
+        return 999
+    now = datetime.utcnow()
+    min_days = 999
+    for evt in events:
+        parsed = _parse_date(evt.get("date", ""))
+        if parsed is not None:
+            min_days = min(min_days, (now - parsed).days)
+    return min_days
+
+
+def classify_icp_segment_name(artifact: EnrichmentArtifact) -> tuple[str, float]:
+    """
+    Classify a prospect into one of the 4 Tenacious ICP segments using the
+    priority ordering defined in data/tenacious_sales_data/seed/icp_definition.md.
+
+    Priority order (first match wins):
+      1. Layoff ≤120d + Series A/B funding          → Segment 2 (cost pressure dominates)
+      2. Leadership change + headcount 50–500        → Segment 3 (transition window)
+      3. AI score ≥4.0 + capability-gap job signals  → Segment 4 (specialised gap)
+      4. Series A/B funding + headcount ≤80 + 5+ roles → Segment 1 (fresh-funded startup)
+      5. No match                                    → abstain
+
+    Returns (segment_name, confidence).
+    """
+    crunch = artifact.crunchbase.value if isinstance(artifact.crunchbase.value, dict) else {}
+    jobs = artifact.job_signals.value if isinstance(artifact.job_signals.value, dict) else {}
+    layoff = artifact.layoff_signals.value if isinstance(artifact.layoff_signals.value, dict) else {}
+    leadership = artifact.leadership_changes.value if isinstance(artifact.leadership_changes.value, dict) else {}
+
+    funding_stage = crunch.get("funding_stage", "")
+    open_roles = int(jobs.get("open_roles", 0) or 0)
+    ai_adjacent = int(jobs.get("ai_adjacent_roles", 0) or 0)
+    layoff_event_count = int(layoff.get("event_count", 0) or 0)
+    leadership_change_count = int(leadership.get("change_count", 0) or 0)
+
+    hc_min, _ = _parse_headcount(crunch.get("employee_count", ""))
+    days_since_layoff = _days_since_most_recent_layoff(layoff)
+    series_ab = funding_stage in ("Series A", "Series B")
+
+    # Priority 1 — layoff in last 120d + fresh Series A/B → cost-pressure window
+    if layoff_event_count > 0 and days_since_layoff <= 120 and series_ab:
+        return "Segment 2 — Mid-market platforms restructuring cost", min(0.85, artifact.layoff_signals.confidence)
+
+    # Priority 2 — leadership change + right-size headcount → transition window
+    if leadership_change_count > 0 and (hc_min == 0 or 50 <= hc_min <= 500):
+        return "Segment 3 — Engineering-leadership transitions", min(0.80, artifact.leadership_changes.confidence)
+
+    # Priority 3 — AI score ≥4.0 (≈ readiness 2/3) + repeated niche role signals → capability gap
+    if artifact.ai_maturity_score >= 4.0 and open_roles >= 3 and ai_adjacent >= 1:
+        return "Segment 4 — Specialized capability gaps", min(0.70, artifact.ai_maturity_confidence)
+
+    # Priority 4 — fresh Series A/B + startup headcount + 5+ open roles → funded startup
+    if series_ab and open_roles >= 5 and (hc_min == 0 or hc_min <= 80):
+        return "Segment 1 — Recently-funded Series A/B startups", min(0.85, artifact.crunchbase.confidence)
+
+    return "abstain", 0.30
+
+
 # ─────────────────────────────────────────────────────────────
 # Pipeline entrypoint
 # ─────────────────────────────────────────────────────────────
@@ -516,6 +600,9 @@ def enrich_company(company_name: str) -> EnrichmentArtifact:
         icp_confidence=icp_conf,
     )
 
-    LOGGER.info("Enrichment complete: %s | ai_score=%.2f icp_seg=%d conf=%.2f",
-                company_name, ai_score, icp_seg, ai_conf)
+    seg_name, _ = classify_icp_segment_name(artifact)
+    artifact.icp_segment_name = seg_name
+
+    LOGGER.info("Enrichment complete: %s | ai_score=%.2f icp_seg=%d seg=%s conf=%.2f",
+                company_name, ai_score, icp_seg, seg_name, icp_conf)
     return artifact

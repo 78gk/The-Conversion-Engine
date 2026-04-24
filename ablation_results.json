@@ -1,0 +1,55 @@
+{
+  "generated_at": "2026-04-24T11:46:11.233158Z",
+  "description": "Act IV ablation: confidence-proportional phrasing gate on signal over-claiming",
+  "target_failure_mode": "signal_over_claiming",
+  "probe_ids": [
+    "P-006",
+    "P-007",
+    "P-008",
+    "P-009",
+    "P-010"
+  ],
+  "conditions": [
+    {
+      "condition_id": "control_no_gate",
+      "description": "Day-1 baseline: llama-3.3-70b, no phrasing gate",
+      "model": "meta-llama/llama-3.3-70b-instruct",
+      "phrasing_gate": false,
+      "num_tasks": 30,
+      "num_trials": 1,
+      "pass_at_1": 0.1333,
+      "confidence_interval_95": [
+        0.053,
+        0.297
+      ],
+      "source": "eval/score_log.json (day1-baseline)",
+      "measured": true
+    },
+    {
+      "condition_id": "treatment_gpt4omini",
+      "description": "Mechanism eval: gpt-4o-mini with confidence-proportional phrasing gate",
+      "model": "openrouter/openai/gpt-4o-mini",
+      "phrasing_gate": true,
+      "gate_description": "High(>=0.70)->assertive, Medium(0.40-0.69)->inquiry, Low(0.20-0.39)->hypothesis, Absent(<0.20)->abstention",
+      "num_tasks": 20,
+      "num_trials": 1,
+      "pass_at_1": 0.45,
+      "confidence_interval_95": [
+        0.232,
+        0.668
+      ],
+      "cost_usd": 0.1382,
+      "source": "tau2-bench/data/simulations/20260424_142140_retail_llm_agent_gpt-4o-mini_user_simulator_gpt-4o-mini/results.json",
+      "trace_file": "held_out_traces.jsonl",
+      "measured": true
+    },
+    {
+      "condition_id": "delta_a",
+      "description": "Delta A: treatment minus control",
+      "pass_at_1_delta": 0.3167,
+      "delta_pct": 237.6,
+      "interpretation": "pass@1 improves +0.3167 (+237.6%) from day-1 baseline. Positive delta confirms mechanism addresses signal over-claiming.",
+      "source": "Derived from control_no_gate and treatment_gpt4omini"
+    }
+  ]
+}

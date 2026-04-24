@@ -38,12 +38,17 @@
     },
     {
       "name": "mechanism-eval",
-      "status": "pending",
-      "pass_at_1": null,
-      "confidence_interval_95": null,
-      "model": "openai/gpt-4o-mini",
+      "status": "pass",
+      "pass_at_1": 0.4500,
+      "confidence_interval_95": [0.2320, 0.6680],
+      "model": "openrouter/openai/gpt-4o-mini",
       "num_trials": 1,
-      "notes": "Act IV mechanism run on held-out slice. Pending execution."
+      "num_tasks": 20,
+      "cost_per_run_usd": 0.1382,
+      "avg_cost_per_task_usd": 0.0069,
+      "simulation_dir": "tau2-bench/data/simulations/20260424_142140_retail_llm_agent_gpt-4o-mini_user_simulator_gpt-4o-mini",
+      "measured": true,
+      "notes": "Act IV mechanism eval: gpt-4o-mini with confidence-proportional phrasing gate on held-out retail slice (20 tasks, 1 trial). 9/20 passing. 4 tasks errored (reward=0, 0 messages) counted as failures per tau2 convention. Delta A = +0.3167 vs day1-baseline (+237.6%)."
     }
   ]
 }
