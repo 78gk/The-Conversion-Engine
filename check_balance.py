@@ -35,7 +35,7 @@ except urllib.error.HTTPError as e:
 # Live call test — tiny prompt, cheapest free model
 print("\n--- Live call test ---")
 payload = json.dumps({
-    "model": "mistralai/mistral-7b-instruct:free",
+    "model": "meta-llama/llama-3.1-8b-instruct:free",
     "messages": [{"role": "user", "content": "Reply with just: OK"}],
     "max_tokens": 5
 }).encode()
