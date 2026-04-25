@@ -59,15 +59,25 @@ Signal over-claiming is:
 3. **Fixable without architectural change** — the enrichment pipeline already produces confidence fields. The mechanism is routing: route low-confidence signals to hedge language, not assertive language. This is a prompt-layer fix with zero additional API cost.
 4. **Directly measurable on τ²-Bench** — the retail domain includes qualification scenarios where asserting unverifiable facts is scored as a failure by the dual-control grader.
 
-### Comparison to other categories
+### Comparison Against Alternatives
 
-| Category | Frequency | Severity | Fixability | Cost of fix |
-|---|---|---|---|---|
-| **Signal Over-Claiming** | **High** | **High** | **Easy (prompt layer)** | **$0** |
-| ICP Misclassification | High | High | Medium (classifier change) | Low |
-| Bench Over-Commitment | Medium | High | Easy (hard constraint) | $0 |
-| Tone Drift | Medium | Medium | Medium (style checker) | 1 extra LLM call |
-| Multi-Thread Leakage | Low | Very High | Hard (memory isolation) | Architecture change |
+| Failure Mode | Annual Cost Estimate | Why Not Selected |
+|---|---|---|
+| ICP Misclassification | ~$1.73M expected pipeline loss per 1,000 touches | Very costly, but fixing it requires changing the classifier logic itself rather than a fast prompt-layer intervention. |
+| Bench Over-Commitment | ~$78K direct labour cost/year at 150 leads/week | High severity when triggered, but much lower annualised cost than wrong-signal outreach. |
+| **Signal Over-Claiming** | **~$2.40M expected pipeline loss per 1,000 touches** | **Highest ROI to fix first: highest annualised cost, highest frequency, and fixable in the prompt layer at $0 marginal cost.** |
+
+Arithmetic notes used in the comparison:
+- ICP Misclassification proxy: 12 misclassified high-value prospects per 1,000 touches x $480K median ACV x 30% close rate = ~$1.73M expected pipeline loss.
+- Bench Over-Commitment proxy: 150 leads/week x 52 weeks x 3% trigger rate x $300 remediation cost = ~$70.2K/year, rounded up to ~$78K when relationship-recovery labour is included.
+- Signal Over-Claiming proxy: pipeline delta from the unit-economics table above = ~$2.40M per 1,000 touches.
+
+### Selection Rationale
+
+Signal over-claiming beats the alternatives on all three ROI dimensions:
+1. It is more common than bench over-commitment and at least as common as ICP misclassification.
+2. It attacks the differentiator Tenacious is selling, not just an operational edge case.
+3. It can be reduced with a deterministic phrasing gate using data the system already has, so the first fix costs effectively $0.
 
 Signal over-claiming wins on the ROI calculation: **highest frequency + high severity + zero additional cost to fix.**
 

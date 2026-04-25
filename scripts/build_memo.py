@@ -219,12 +219,12 @@ _COL_WIDTHS: dict[int, list[int]] = {
 
 
 class MemoRenderer:
-    BODY  = 8
-    HEAD1 = 10
-    HEAD2 = 9
-    SMALL = 6.5
-    LH    = 3.8   # body line height mm
-    LH_SM = 3.3   # table row height mm
+    BODY  = 7.4
+    HEAD1 = 9.5
+    HEAD2 = 8.5
+    SMALL = 6.1
+    LH    = 3.35   # body line height mm
+    LH_SM = 3.0    # table row height mm
 
     def __init__(self, pdf):
         self.pdf = pdf
@@ -421,21 +421,21 @@ def build_pdf() -> Path:
         sys.exit(1)
 
     pdf = FPDF(format="Letter")
-    pdf.set_margins(22, 16, 22)
-    pdf.set_auto_page_break(auto=True, margin=16)
+    pdf.set_margins(16, 12, 16)
+    pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
 
     # Custom title block (replaces the # heading in memo.md)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 6.5, "The Conversion Engine -- Decision Memo", ln=True)
-    pdf.set_font("Helvetica", "", 8)
-    pdf.cell(0, 4, "For: Tenacious Consulting and Outsourcing -- CEO / CFO", ln=True)
-    pdf.cell(0, 4, "From: Kirubel Tewodros, 10 Academy Week 10  |  Date: 2026-04-25", ln=True)
-    pdf.cell(0, 4, "Mechanism: Confidence-Proportional Phrasing Gates (Act IV)", ln=True)
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 5.5, "The Conversion Engine -- Decision Memo", ln=True)
+    pdf.set_font("Helvetica", "", 7.4)
+    pdf.cell(0, 3.6, "For: Tenacious Consulting and Outsourcing -- CEO / CFO", ln=True)
+    pdf.cell(0, 3.6, "From: Kirubel Tewodros, 10 Academy Week 10  |  Date: 2026-04-25", ln=True)
+    pdf.cell(0, 3.6, "Mechanism: Confidence-Proportional Phrasing Gates (Act IV)", ln=True)
     pdf.set_draw_color(0, 0, 0)
     pdf.set_line_width(0.4)
-    pdf.line(22, pdf.get_y() + 1.5, pdf.w - 22, pdf.get_y() + 1.5)
-    pdf.ln(4)
+    pdf.line(16, pdf.get_y() + 1.2, pdf.w - 16, pdf.get_y() + 1.2)
+    pdf.ln(3)
 
     render_from_memo_md(pdf, memo_path)
 

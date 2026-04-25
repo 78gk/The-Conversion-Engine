@@ -62,15 +62,32 @@ def _parse_employee_band_min(raw: str) -> int:
 
 
 def _band_label(min_size: int) -> str:
-    if min_size <= 15:
-        return "1_to_15"
     if min_size <= 80:
         return "15_to_80"
     if min_size <= 200:
         return "80_to_200"
     if min_size <= 500:
         return "200_to_500"
-    return "500_plus"
+    if min_size <= 2000:
+        return "500_to_2000"
+    return "2000_plus"
+
+
+def _matches_sector(categories: str, prospect_sector: str) -> bool:
+    categories_lower = (categories or "").lower()
+    sector_lower = (prospect_sector or "").lower()
+    if not categories_lower or not sector_lower:
+        return False
+    if sector_lower in categories_lower:
+        return True
+    sector_tokens = [tok for tok in sector_lower.replace("/", " ").replace("-", " ").split() if len(tok) >= 4]
+    return any(tok in categories_lower for tok in sector_tokens)
+
+
+def _within_headcount_band(row_min: int, prospect_headcount_min: int, lower: float, upper: float) -> bool:
+    if prospect_headcount_min <= 0:
+        return True
+    return prospect_headcount_min * lower <= row_min <= prospect_headcount_min * upper
 
 
 def handle_sparse_sector(prospect_sector: str, count: int) -> dict[str, Any]:
@@ -105,8 +122,8 @@ def select_competitors(
         LOGGER.warning("Crunchbase ODM CSV missing at %s", ODM_PATH)
         return handle_sparse_sector(prospect_sector, 0) | {"competitors": []}
 
-    sector_lower = prospect_sector.lower()
-    candidates: list[Competitor] = []
+    strict_candidates: list[Competitor] = []
+    broadened_candidates: list[Competitor] = []
 
     with open(ODM_PATH, encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
@@ -115,20 +132,12 @@ def select_competitors(
             if not row_name or row_name.lower() == prospect_name.lower():
                 continue
 
-            categories = (row.get("category_list", "") or "").lower()
-            if sector_lower not in categories:
-                continue
-
             stage = row.get("funding_stage", "").strip()
             if stage not in ALLOWED_FUNDING_STAGES:
                 continue
 
             row_min = _parse_employee_band_min(row.get("employee_count", ""))
-            # Keep within 0.5x..2x of prospect headcount
-            if prospect_headcount_min > 0 and not (prospect_headcount_min * 0.5 <= row_min <= prospect_headcount_min * 2.0):
-                continue
-
-            candidates.append(Competitor(
+            competitor = Competitor(
                 name=row_name,
                 domain=row.get("homepage_url", row_name.lower().replace(" ", "-") + ".example"),
                 sector=row.get("category_list", ""),
@@ -136,17 +145,39 @@ def select_competitors(
                 employee_count=row.get("employee_count", ""),
                 headcount_band=_band_label(row_min),
                 source_row=dict(row),
-            ))
+            )
+
+            if _matches_sector(row.get("category_list", ""), prospect_sector) and _within_headcount_band(row_min, prospect_headcount_min, 0.5, 2.0):
+                strict_candidates.append(competitor)
+                continue
+
+            if _within_headcount_band(row_min, prospect_headcount_min, 0.2, 10.0):
+                broadened_candidates.append(competitor)
+
+    candidates = strict_candidates[:]
+    used_broadened_fallback = False
+    if len(candidates) < n_min and broadened_candidates:
+        seen = {c.name.lower() for c in candidates}
+        for competitor in broadened_candidates:
+            if competitor.name.lower() not in seen:
+                candidates.append(competitor)
+        used_broadened_fallback = True
 
     if not candidates:
         return handle_sparse_sector(prospect_sector, 0) | {"competitors": []}
 
     candidates.sort(key=lambda c: _parse_employee_band_min(c.employee_count), reverse=True)
-    top_quartile_cutoff = max(1, len(candidates) // 4)
-    top_quartile = candidates[:max(top_quartile_cutoff, n_max)]
-    selected = top_quartile[:n_max]
+    if len(candidates) <= n_max:
+        selected = candidates
+    else:
+        top_quartile_cutoff = max(n_min, min(n_max, len(candidates) // 4))
+        selected = candidates[:top_quartile_cutoff]
 
     if len(selected) < n_min:
         return handle_sparse_sector(prospect_sector, len(selected)) | {"competitors": [c.__dict__ for c in selected]}
 
-    return {"status": "ok", "competitors": [c.__dict__ for c in selected]}
+    return {
+        "status": "ok",
+        "selection_strategy": "broadened_fallback" if used_broadened_fallback else "strict_top_quartile",
+        "competitors": [c.__dict__ for c in selected],
+    }

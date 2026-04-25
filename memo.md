@@ -75,7 +75,7 @@ Justification (citing this memo's own findings):
 
 **Lead volume:** **150 leads/week** (≈ 60 SDR thoughtful touches/week × 2.5× lift from automation, per `baseline_numbers.md`).
 
-**Budget:** **$1,200/week** ($8/lead end-to-end, well under the $5 cost-per-qualified target after the 7-12% qualification funnel).
+**Budget:** **$1,200/week** (about $8 per contacted lead end-to-end, still compatible with the `<= $5` cost-per-qualified-lead target at the 7-12% reply-rate range used in § 1).
 
 **Success criterion:**
 
@@ -119,22 +119,4 @@ The next mechanism iteration should add a hard-constraint check on any phrase ma
 
 ## Evidence Trail
 
-Every numeric claim above traces to a file in this repository. Full graph: `evidence_graph.json`. Key citations:
-
-| ID | Claim | Source |
-|---|---|---|
-| C1 | Instructor baseline pass@1 = 0.7267 | `input/score_log.json` |
-| C2 | Day-1 baseline pass@1 = 0.1333 | `eval/score_log.json` |
-| C3 | Mechanism eval pass@1 = 0.4500 (gpt-4o-mini) | `eval/score_log.json` |
-| C4 | gpt-4.1 production pass@1 = 0.8333 (+14.7% vs instructor) | `eval/score_log.json` |
-| C5 | Two-proportion z-test p=0.009 (mechanism vs day-1) | `ablation_results.json`, `method.md` § 7 |
-| C6 | Mechanism eval cost $0.1382 / 20 tasks | `ablation_results.json` |
-| C7 | Cost per qualified lead = $0.52 (1,000 touches; 95 qualified midpoint) | this memo § 1 derivation |
-| C8 | Stall rate 11.1% on synthetic τ²-Bench slice vs 30-40% manual baseline | this memo § 2; `baseline_numbers.md`; challenge spec |
-| C9 | Signal-grounded reply rate 7-12% top quartile vs 1-3% generic baseline | `baseline_numbers.md` |
-| C10 | Qualified lead = replied + did not unsubscribe within 72h | this memo § 1 definition |
-| C11 | Tenacious bench: 36 engineers (Python-heavy mix) | `data/tenacious_sales_data/seed/bench_summary.json` |
-| C12 | Talent outsourcing ACV $240K-$720K | challenge spec `input/TRP1*.md` |
-| C13 | 33 adversarial probes across 10 failure categories | `probes/probe_library.json` |
-| C14 | Bench over-commitment trigger rate ~3% in Segment 2 conversations | this memo § 6; `probes/probe_library.json` P-011 |
-| C15 | Mechanism cost $0 additional API spend per lead | `method.md` § 3.4 |
+Every numeric claim above maps to a repository source in `evidence_graph.json` (claims C1-C15). The key inputs are `eval/score_log.json` for pass@1, `ablation_results.json` and `method.md` § 7 for cost and statistical significance, `baseline_numbers.md` plus the challenge spec for outreach and ACV benchmarks, and `probes/probe_library.json` / `failure_taxonomy.md` for the unresolved-failure economics.

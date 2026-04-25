@@ -153,7 +153,11 @@ A standalone diagram lives at [`docs/architecture.md`](docs/architecture.md).
 | `input/` | Original challenge spec and reference materials (`TRP1 Challenge Week 10_*.md`, instructor `score_log.json`). |
 | `tests/` | Pytest test suite. |
 | `artifacts/` | Runtime-generated logs and reports (gitignored except for committed reports). |
-| `memo.md` / `memo.pdf` | Final 2-page decision memo (markdown source + rendered PDF). |
+| `.venv/` | Local virtual environment used for reproducible runs on this machine. Not part of the submission logic; safe to recreate from `requirements.txt`. |
+| `.pytest_cache/` | Pytest cache directory created by local test runs. Ephemeral and not required by inheritors. |
+| `.claude/` | Local agent-tooling metadata from prior sessions. Not part of the product runtime or grading path. |
+| `.sixth/` | Local tooling state directory from prior agent workflows. Not required to run or extend the system. |
+| `memo.md` / `memo.pdf` | Final 3-page decision memo (markdown source + rendered PDF). |
 | `method.md` | Act IV mechanism design record (re-implementable spec, hyperparameters, three named ablation variants, statistical test plan). |
 | `ablation_results.json` | Control + treatment + production + three named ablation variants. |
 | `evidence_graph.json` | Every numeric claim in `memo.pdf` mapped to its source file and field. |
