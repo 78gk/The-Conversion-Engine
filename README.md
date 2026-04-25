@@ -63,7 +63,7 @@ flowchart LR
         OBS1[Langfuse cloud trace]
         OBS2[eval/trace_log.jsonl<br/>local fallback]
         OBS3[artifacts/logs/<br/>webhook events]
-        OBS4[eval/score_log.json<br/>pass@1 history]
+        OBS4[eval/score_log.json<br/>pass-at-1 history]
     end
 
     SIGNAL --> SCORE
