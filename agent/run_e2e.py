@@ -41,7 +41,7 @@ from agent.integrations import (
 PROSPECT = {
     "company": "SynthCo Inc.",
     "cto_name": "Alex Rivera",
-    "cto_email": "alex.rivera@synthco.example.com",
+    "cto_email": "kirutew17654321@gmail.com",
     "cto_phone": "+254700000001",  # AT sandbox accepts any valid E.164
     "stage": "Series B",
     "funding_usd": 18_000_000,

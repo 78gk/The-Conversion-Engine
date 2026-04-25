@@ -37,7 +37,7 @@ The mechanism-eval run consumed $0.1382 across 20 τ²-Bench tasks (`ablation_re
 
 A **stalled thread** is any inbound prospect reply that receives no outbound follow-up within 4 hours.
 
-System measurement (synthetic, τ²-Bench retail mechanism eval, gpt-4o-mini, n=20 tasks): **1 of 9 passing tasks stalled** by this definition — **11.1% stall rate** (1 ÷ 9). Baseline manual stall rate per the challenge spec: 30-40%; per the seed `baseline_numbers.md` middle-to-late stage: ~72%. Delta against the 30-40% manual baseline: **−19 to −29 percentage points**.
+System measurement (synthetic, τ²-Bench retail mechanism eval, gpt-4o-mini, n=20 tasks): **1 of 9 passing tasks stalled** by this definition — **11.1% stall rate** (1 ÷ 9; 9 passing tasks = pass@1 of 0.45 × 20 evaluated tasks). Baseline manual stall rate per the challenge spec: 30-40%; per the seed `baseline_numbers.md` middle-to-late stage: ~72%. Delta against the 30-40% manual baseline: **−19 to −29 percentage points**.
 
 **Caveat (required):** measurement was conducted over τ²-Bench synthetic retail prospects, not real Tenacious B2B sales conversations. Production transfer is directionally suggestive only — variety of edge cases and prospect responsiveness will shift this rate. The 30-day pilot (§ 4) is the right venue to measure the production rate.
 
@@ -50,16 +50,16 @@ Two outreach variants tested on the τ²-Bench mechanism slice:
 
 **Assignment method:** alternating across the 20-task slice (odd-numbered tasks → signal-grounded, even → generic), recorded in `held_out_traces.jsonl`.
 
-**Reply rates** (combining measured pass@1 with industry baselines from `baseline_numbers.md`):
+**Reply rates** — τ²-Bench evaluates agent task-completion success (pass@1), not live prospect conversations, so reply rates cannot be measured directly from system runs. They are estimated by mapping each outreach variant to the corresponding industry benchmark in `baseline_numbers.md`; the n=10/20 in the table reflects τ²-Bench task assignment (odd/even split above), **not** actual respondents from live outreach:
 
-| Variant | Reply rate | Sample | Source |
+| Variant | Reply rate | Task assignment | Source |
 |---|---|---|---|
-| Signal-grounded (top-quartile) | 7-12% | n=10 / 20 | Clay 2025, Smartlead 2025 case studies (`baseline_numbers.md`) |
-| Generic cold (industry baseline) | 1-3% | n=10 / 20 | LeadIQ 2026, Apollo 2026 benchmarks (`baseline_numbers.md`) |
+| Signal-grounded (top-quartile) | 7-12% | n=10 of 20 tasks | Clay 2025, Smartlead 2025 case studies (`baseline_numbers.md`) |
+| Generic cold (industry baseline) | 1-3% | n=10 of 20 tasks | LeadIQ 2026, Apollo 2026 benchmarks (`baseline_numbers.md`) |
 
 **Delta = +6 to +9 percentage points** in favour of signal-grounded.
 
-**Honest sample caveat (required):** n=20 per arm is too small for statistical significance on a binary reply-rate test; this is **directionally suggestive, not conclusive**. The pilot in § 4 is sized to produce a significance-grade reading at Day 30.
+**Honest sample caveat (required):** the industry benchmarks above are proxies, not measurements from this system's live runs. n=20 task assignments per arm is also too small for a statistically significant binary reply-rate test; this delta is **directionally suggestive, not conclusive**. The pilot in § 4 is the correct venue to produce a significance-grade reading at Day 30.
 
 ## 4. Pilot Recommendation
 
