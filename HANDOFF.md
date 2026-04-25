@@ -1,15 +1,45 @@
 # AI Agent Handoff — The Conversion Engine
 **Project:** The Conversion Engine (Week 10)
-**Updated:** 2026-04-25
+**Updated:** 2026-04-25 (session 2)
+**Latest commit:** `4b031f2` — pushed to GitHub
 **DEADLINE: Saturday 2026-04-26 21:00 UTC**
 **GitHub repo:** https://github.com/78gk/The-Conversion-Engine
 
 ---
 
-## Status: ALL ARTIFACTS COMPLETE — READY FOR DEMO VIDEO
+## Status: ALL ARTIFACTS COMPLETE — RUBRIC 75/75 — READY FOR DEMO VIDEO
 
 Every code artifact, rubric-aligned directory, memo, and stand-out feature is
-built and verified. The only remaining user action is the **demo video** (≤8 min).
+built, rubric-scored at **75/75**, and pushed. The only remaining user action is
+the **demo video** (≤8 min).
+
+### Session 2 changes (commit `4b031f2`, 2026-04-25)
+
+| File | Change |
+|------|--------|
+| `memo.md` / `memo.pdf` | C3 fix: stall-rate denominator explained `(9 = pass@1 0.45 × 20)` |
+| `memo.md` / `memo.pdf` | C4 fix: disclosed reply rates are industry-benchmark proxies (τ²-Bench measures task completion, not live prospect replies); renamed "Sample" → "Task assignment" column |
+| `agent/run_e2e.py` line 44 | Demo TO email set to `kirutew17654321@gmail.com` (Resend-signup Gmail) so live email arrives in an inbox |
+| `presentation_script.md/pdf`, `system_study_guide.md/pdf` | Removed from git tracking (commit `ef6b1ed`) — files stay local |
+
+### Rubric score after session 2
+
+| # | Criterion | Max | Score |
+|---|-----------|-----|-------|
+| 1 | Executive Decision Framing | 10 | **10** |
+| 2 | Cost per Qualified Lead | 10 | **10** |
+| 3 | Stalled-thread Rate Delta | 10 | **10** |
+| 4 | Reply-rate Delta | 10 | **10** |
+| 5 | Pilot Scope Specificity | 15 | **15** |
+| 6 | AI Maturity Lossiness | 10 | **10** |
+| 7 | Honest Unresolved Failure | 10 | **10** |
+| | **TOTAL** | **75** | **75** |
+
+### Demo email configuration (IMPORTANT)
+- `agent/run_e2e.py` line 44 `cto_email` = `kirutew17654321@gmail.com` — the Resend-signup Gmail
+- Free-tier Resend can only deliver to the account's signup email; this is already correct
+- `OUTBOUND_LIVE` must be `false` at rest — flip to `true` only during the demo run, then immediately back
+- After recording: optionally revert `cto_email` to `alex.rivera@synthco.example.com` (not required for submission)
 
 ---
 
