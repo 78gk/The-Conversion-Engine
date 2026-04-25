@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T11:47:37.175557Z",
+  "generated_at": "2026-04-25T14:29:58.959998Z",
   "memo_file": "memo.pdf",
   "claims": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "claim_id": "C2",
-      "claim": "Day-1 baseline pass@1 = 0.1333 (llama-3.3-70b, no mechanism)",
+      "claim": "Day-1 baseline pass@1 = 0.1333",
       "value": 0.1333,
       "source_file": "eval/score_log.json",
       "source_field": "entries[day1-baseline].pass_at_1",
@@ -20,7 +20,7 @@
     },
     {
       "claim_id": "C3",
-      "claim": "Mechanism eval pass@1 = 0.45 (gpt-4o-mini)",
+      "claim": "Mechanism eval pass@1 = 0.4500 (gpt-4o-mini)",
       "value": 0.45,
       "source_file": "eval/score_log.json",
       "source_field": "entries[mechanism-eval].pass_at_1",
@@ -28,50 +28,98 @@
     },
     {
       "claim_id": "C4",
-      "claim": "Signal over-claiming trigger rate: 30-50% of prospect list",
-      "value": "0.30-0.50",
-      "source_file": "probes/target_failure_mode.md",
-      "source_field": "\u00a7 Why this is highest-ROI to fix -> Frequency",
+      "claim": "gpt-4.1 production pass@1 = 0.8333 (+14.7% vs instructor)",
+      "value": 0.8333,
+      "source_file": "eval/score_log.json",
+      "source_field": "entries[production-gpt41].pass_at_1",
       "trace_id": null
     },
     {
       "claim_id": "C5",
-      "claim": "Pipeline delta: ~$2.4M per 1,000 touches (correct vs wrong signal)",
-      "value": 2400000,
-      "source_file": "probes/target_failure_mode.md",
-      "source_field": "\u00a7 Unit economics -> Delta",
+      "claim": "Two-proportion z-test p=0.009 (mechanism vs day-1)",
+      "value": 0.009,
+      "source_file": "ablation_results.json",
+      "source_field": "statistical_test.p_value",
       "trace_id": null
     },
     {
       "claim_id": "C6",
-      "claim": "Signal-grounded reply rate (top-quartile): 7-12%",
-      "value": "0.07-0.12",
-      "source_file": "probes/target_failure_mode.md",
-      "source_field": "\u00a7 Business Cost Derivation -> Input table",
+      "claim": "Mechanism eval cost $0.1382 / 20 tasks",
+      "value": 0.1382,
+      "source_file": "ablation_results.json",
+      "source_field": "treatment_with_gate.cost_usd",
       "trace_id": null
     },
     {
       "claim_id": "C7",
-      "claim": "33 adversarial probes across 10 failure categories",
-      "value": 33,
-      "source_file": "probes/probe_library.md",
-      "source_field": "probe count",
+      "claim": "Cost per qualified lead = $0.52 (1,000 touches; 95 leads midpoint)",
+      "value": 0.52,
+      "source_file": "memo.md",
+      "source_field": "section 1 derivation",
       "trace_id": null
     },
     {
       "claim_id": "C8",
-      "claim": "Mechanism cost: $0 additional API cost per lead",
-      "value": 0,
-      "source_file": "method.md",
-      "source_field": "\u00a7 3.4 Implementation -> no new API calls",
+      "claim": "Stall rate 11.1% on synthetic tau2-Bench vs 30-40% manual baseline",
+      "value": 0.111,
+      "source_file": "memo.md",
+      "source_field": "section 2; data/tenacious_sales_data/seed/baseline_numbers.md",
       "trace_id": null
     },
     {
       "claim_id": "C9",
-      "claim": "Delta A (mechanism - day1): +0.3167 (+237.6%)",
-      "value": 0.3167,
-      "source_file": "eval/score_log.json",
-      "source_field": "entries[mechanism-eval].pass_at_1 - entries[day1-baseline].pass_at_1",
+      "claim": "Signal-grounded reply rate 7-12% vs 1-3% generic baseline",
+      "value": "0.07-0.12",
+      "source_file": "data/tenacious_sales_data/seed/baseline_numbers.md",
+      "source_field": "reply rate benchmarks",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C10",
+      "claim": "Qualified lead = replied + not unsubscribed within 72h",
+      "value": "definition",
+      "source_file": "memo.md",
+      "source_field": "section 1 definition",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C11",
+      "claim": "Tenacious bench: 36 engineers (Python:7, Data:9, ML:5, Infra:4)",
+      "value": 36,
+      "source_file": "data/tenacious_sales_data/seed/bench_summary.json",
+      "source_field": "total_headcount + stack breakdown",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C12",
+      "claim": "Talent outsourcing ACV $240K-$720K",
+      "value": "240000-720000",
+      "source_file": "input/TRP1 Challenge Week 10 (1).md",
+      "source_field": "ACV table",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C13",
+      "claim": "33 adversarial probes across 10 failure categories",
+      "value": 33,
+      "source_file": "probes/probe_library.json",
+      "source_field": "probe count",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C14",
+      "claim": "Bench over-commitment trigger rate ~3% in Segment 2 conversations",
+      "value": 0.03,
+      "source_file": "probes/probe_library.json",
+      "source_field": "PROBE-011 observed_trigger_rate",
+      "trace_id": null
+    },
+    {
+      "claim_id": "C15",
+      "claim": "Mechanism cost $0 additional API spend per lead",
+      "value": 0,
+      "source_file": "method.md",
+      "source_field": "section 3.4 Implementation",
       "trace_id": null
     }
   ]

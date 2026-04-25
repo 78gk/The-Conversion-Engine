@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tenacious-training.dev/schemas/adversarial_probe.schema.json",
+  "title": "Adversarial Probe",
+  "description": "Schema for one entry in the Conversion Engine adversarial probe library. Pins the six required fields named in final-repo-rubric Criterion 6 (F2). Every probe in probes/probe_library.json must validate against this schema.",
+  "type": "object",
+  "required": [
+    "probe_id",
+    "category",
+    "setup",
+    "expected_failure_signature",
+    "observed_trigger_rate",
+    "business_cost_framing"
+  ],
+  "properties": {
+    "probe_id": {
+      "type": "string",
+      "pattern": "^P-[0-9]{3}$",
+      "description": "Stable identifier, e.g. P-006."
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "ICP Misclassification",
+        "Signal Over-Claiming",
+        "Hiring-Signal Over-Claiming",
+        "Bench Over-Commitment",
+        "Tone Drift",
+        "Tone Drift from Style Guide",
+        "Multi-Thread Leakage",
+        "Cost Pathology",
+        "Dual-Control Coordination",
+        "Scheduling Edge Cases",
+        "Signal Reliability",
+        "Signal Reliability with False-Positive Notes",
+        "Gap Over-Claiming"
+      ],
+      "description": "One of the ten failure categories in probes/failure_taxonomy.md."
+    },
+    "setup": {
+      "type": "string",
+      "minLength": 30,
+      "description": "Specific scenario that triggers the failure. Must be detailed enough to mentally re-run."
+    },
+    "expected_failure_signature": {
+      "type": "string",
+      "minLength": 20,
+      "description": "What the agent does wrong when this scenario fires."
+    },
+    "observed_trigger_rate": {
+      "oneOf": [
+        { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        { "type": "string", "pattern": "^[0-9]+/[0-9]+$" }
+      ],
+      "description": "Either a fractional rate (e.g. 0.4 for 40%) or a 'k/n runs' string (e.g. '4/10 runs')."
+    },
+    "business_cost_framing": {
+      "type": "string",
+      "minLength": 30,
+      "description": "Cost expressed in Tenacious-specific terms — ACV band, stalled-thread rate, brand reputation, or a dollar estimate per N leads."
+    },
+    "tenacious_specific": {
+      "type": "boolean",
+      "description": "True if the probe references talent-outsourcing context (offshore-perception, bench-to-brief, condescending-to-CTO, etc.). Used by F13 specificity check."
+    }
+  }
+}

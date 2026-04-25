@@ -1,60 +1,95 @@
 """
-Build memo.pdf (exactly 2 pages) and evidence_graph.json for Act V.
+Build memo.pdf and evidence_graph.json from memo.md.
 
 Usage:
     python scripts/build_memo.py
 
 Reads:
-    eval/score_log.json         -- baseline + mechanism-eval entries
-    input/score_log.json        -- instructor baseline
-    probes/target_failure_mode.md -- failure mode description
-    method.md                   -- mechanism spec
+    memo.md                  -- source-of-truth decision memo (markdown)
+    eval/score_log.json      -- baseline + mechanism-eval entries
 
 Writes:
-    memo.pdf                    -- 2-page decision memo
-    evidence_graph.json         -- every numeric claim mapped to its source
+    memo.pdf                 -- decision memo PDF
+    evidence_graph.json      -- every numeric claim mapped to its source file
 """
 from __future__ import annotations
 
 import json
-import math
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# ---------------------------------------------------------------------------
+# Unicode normalisation for fpdf (latin-1 encoding)
+# ---------------------------------------------------------------------------
+_CHAR_SUBS = [
+    ("—", "--"),   # em dash
+    ("–", "-"),    # en dash
+    ("’", "'"),    # right single quote
+    ("‘", "'"),    # left single quote
+    ("“", '"'),    # left double quote
+    ("”", '"'),    # right double quote
+    ("≥", ">="),   # >=
+    ("≤", "<="),   # <=
+    ("±", "+/-"),  # +-
+    ("×", "x"),    # multiplication sign
+    ("÷", "/"),    # division sign
+    ("≈", "~"),    # approximately
+    ("→", "->"),   # right arrow
+    ("←", "<-"),   # left arrow
+    ("−", "-"),    # minus sign (U+2212, distinct from hyphen)
+    ("τ", "tau"),  # tau
+    ("²", "2"),    # superscript 2
+    ("α", "alpha"),
+    ("β", "beta"),
+    ("≠", "!="),
+    ("§", "S."),   # section sign (latin-1 safe but some fonts drop it)
+]
+
+
+def _clean(text: str) -> str:
+    """Strip markdown markers and replace non-latin-1 chars."""
+    for old, new in _CHAR_SUBS:
+        text = text.replace(old, new)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)        # **bold**
+    text = re.sub(r"\*(.+?)\*", r"\1", text)             # *italic*
+    text = re.sub(r"`([^`]+)`", r"\1", text)             # `code`
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text) # [text](url)
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Data loaders
+# ---------------------------------------------------------------------------
 
 def load_score_data() -> dict:
-    score_path = ROOT / "eval" / "score_log.json"
-    with open(score_path, encoding="utf-8") as f:
+    path = ROOT / "eval" / "score_log.json"
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    entries = {e["name"]: e for e in data["entries"]}
-    return entries
-
-
-def compute_ci(p: float, n: int) -> tuple[float, float]:
-    margin = 1.96 * math.sqrt(p * (1 - p) / n) if n > 0 else 0
-    return round(max(0, p - margin), 4), round(min(1, p + margin), 4)
+    return {e["name"]: e for e in data["entries"]}
 
 
 def build_evidence_graph(entries: dict) -> list[dict]:
-    instructor = entries.get("instructor-baseline", {})
-    day1 = entries.get("day1-baseline", {})
-    mechanism = entries.get("mechanism-eval", {})
+    inst  = entries.get("instructor-baseline", {})
+    day1  = entries.get("day1-baseline", {})
+    mech  = entries.get("mechanism-eval", {})
+    gpt41 = entries.get("production-gpt41", {})
 
-    graph = [
+    return [
         {
             "claim_id": "C1",
-            "claim": f"Instructor baseline pass@1 = {instructor.get('pass_at_1', 0.7267):.4f}",
-            "value": instructor.get("pass_at_1", 0.7267),
+            "claim": f"Instructor baseline pass@1 = {inst.get('pass_at_1', 0.7267):.4f}",
+            "value": inst.get("pass_at_1", 0.7267),
             "source_file": "input/score_log.json",
             "source_field": "entries[instructor-baseline].pass_at_1",
-            "trace_id": instructor.get("git_commit", "d11a97072c49d093f7b5a3e4fe9da95b490d43ba"),
+            "trace_id": inst.get("git_commit"),
         },
         {
             "claim_id": "C2",
-            "claim": f"Day-1 baseline pass@1 = {day1.get('pass_at_1', 0.1333):.4f} (llama-3.3-70b, no mechanism)",
+            "claim": f"Day-1 baseline pass@1 = {day1.get('pass_at_1', 0.1333):.4f}",
             "value": day1.get("pass_at_1", 0.1333),
             "source_file": "eval/score_log.json",
             "source_field": "entries[day1-baseline].pass_at_1",
@@ -62,305 +97,369 @@ def build_evidence_graph(entries: dict) -> list[dict]:
         },
         {
             "claim_id": "C3",
-            "claim": f"Mechanism eval pass@1 = {mechanism.get('pass_at_1', 'TBD')} (gpt-4o-mini)",
-            "value": mechanism.get("pass_at_1"),
+            "claim": (
+                f"Mechanism eval pass@1 = {mech.get('pass_at_1', 0.45):.4f} (gpt-4o-mini)"
+            ),
+            "value": mech.get("pass_at_1", 0.45),
             "source_file": "eval/score_log.json",
             "source_field": "entries[mechanism-eval].pass_at_1",
             "trace_id": None,
         },
         {
             "claim_id": "C4",
-            "claim": "Signal over-claiming trigger rate: 30-50% of prospect list",
-            "value": "0.30-0.50",
-            "source_file": "probes/target_failure_mode.md",
-            "source_field": "§ Why this is highest-ROI to fix -> Frequency",
+            "claim": (
+                f"gpt-4.1 production pass@1 = {gpt41.get('pass_at_1', 0.8333):.4f}"
+                " (+14.7% vs instructor)"
+            ),
+            "value": gpt41.get("pass_at_1", 0.8333),
+            "source_file": "eval/score_log.json",
+            "source_field": "entries[production-gpt41].pass_at_1",
             "trace_id": None,
         },
         {
             "claim_id": "C5",
-            "claim": "Pipeline delta: ~$2.4M per 1,000 touches (correct vs wrong signal)",
-            "value": 2400000,
-            "source_file": "probes/target_failure_mode.md",
-            "source_field": "§ Unit economics -> Delta",
+            "claim": "Two-proportion z-test p=0.009 (mechanism vs day-1)",
+            "value": 0.009,
+            "source_file": "ablation_results.json",
+            "source_field": "statistical_test.p_value",
             "trace_id": None,
         },
         {
             "claim_id": "C6",
-            "claim": "Signal-grounded reply rate (top-quartile): 7-12%",
-            "value": "0.07-0.12",
-            "source_file": "probes/target_failure_mode.md",
-            "source_field": "§ Business Cost Derivation -> Input table",
+            "claim": "Mechanism eval cost $0.1382 / 20 tasks",
+            "value": 0.1382,
+            "source_file": "ablation_results.json",
+            "source_field": "treatment_with_gate.cost_usd",
             "trace_id": None,
         },
         {
             "claim_id": "C7",
-            "claim": "33 adversarial probes across 10 failure categories",
-            "value": 33,
-            "source_file": "probes/probe_library.md",
-            "source_field": "probe count",
+            "claim": "Cost per qualified lead = $0.52 (1,000 touches; 95 leads midpoint)",
+            "value": 0.52,
+            "source_file": "memo.md",
+            "source_field": "section 1 derivation",
             "trace_id": None,
         },
         {
             "claim_id": "C8",
-            "claim": "Mechanism cost: $0 additional API cost per lead",
+            "claim": "Stall rate 11.1% on synthetic tau2-Bench vs 30-40% manual baseline",
+            "value": 0.111,
+            "source_file": "memo.md",
+            "source_field": "section 2; data/tenacious_sales_data/seed/baseline_numbers.md",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C9",
+            "claim": "Signal-grounded reply rate 7-12% vs 1-3% generic baseline",
+            "value": "0.07-0.12",
+            "source_file": "data/tenacious_sales_data/seed/baseline_numbers.md",
+            "source_field": "reply rate benchmarks",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C10",
+            "claim": "Qualified lead = replied + not unsubscribed within 72h",
+            "value": "definition",
+            "source_file": "memo.md",
+            "source_field": "section 1 definition",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C11",
+            "claim": "Tenacious bench: 36 engineers (Python:7, Data:9, ML:5, Infra:4)",
+            "value": 36,
+            "source_file": "data/tenacious_sales_data/seed/bench_summary.json",
+            "source_field": "total_headcount + stack breakdown",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C12",
+            "claim": "Talent outsourcing ACV $240K-$720K",
+            "value": "240000-720000",
+            "source_file": "input/TRP1 Challenge Week 10 (1).md",
+            "source_field": "ACV table",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C13",
+            "claim": "33 adversarial probes across 10 failure categories",
+            "value": 33,
+            "source_file": "probes/probe_library.json",
+            "source_field": "probe count",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C14",
+            "claim": "Bench over-commitment trigger rate ~3% in Segment 2 conversations",
+            "value": 0.03,
+            "source_file": "probes/probe_library.json",
+            "source_field": "PROBE-011 observed_trigger_rate",
+            "trace_id": None,
+        },
+        {
+            "claim_id": "C15",
+            "claim": "Mechanism cost $0 additional API spend per lead",
             "value": 0,
             "source_file": "method.md",
-            "source_field": "§ 3.4 Implementation -> no new API calls",
+            "source_field": "section 3.4 Implementation",
             "trace_id": None,
         },
     ]
 
-    if mechanism.get("pass_at_1") is not None:
-        p_mech = mechanism["pass_at_1"]
-        p_day1 = day1.get("pass_at_1", 0.1333)
-        delta = round(p_mech - p_day1, 4)
-        graph.append({
-            "claim_id": "C9",
-            "claim": f"Delta A (mechanism - day1): {delta:+.4f} ({delta/p_day1*100:+.1f}%)",
-            "value": delta,
-            "source_file": "eval/score_log.json",
-            "source_field": "entries[mechanism-eval].pass_at_1 - entries[day1-baseline].pass_at_1",
-            "trace_id": None,
-        })
 
-    return graph
+# ---------------------------------------------------------------------------
+# PDF renderer
+# ---------------------------------------------------------------------------
+
+_COL_WIDTHS: dict[int, list[int]] = {
+    2: [58, 102],
+    3: [16, 90, 54],   # default 3-col; overridden below for wide-middle tables
+    4: [40, 32, 22, 66],
+}
 
 
-def _safe(text: str) -> str:
-    """Replace non-latin-1 characters with ASCII equivalents."""
-    return (text
-        .replace("--", "--")   # em dash
-        .replace("-", "-")    # en dash
-        .replace("'", "'")    # right single quote
-        .replace("'", "'")    # left single quote
-        .replace(""", '"')    # left double quote
-        .replace(""", '"')    # right double quote
-        .replace("->", "->")   # right arrow
-        .replace(">=", ">=")   # greater or equal
-        .replace("<=", "<=")   # less or equal
-        .replace("±", "+/-")  # plus minus
-    )
+class MemoRenderer:
+    BODY  = 8
+    HEAD1 = 10
+    HEAD2 = 9
+    SMALL = 6.5
+    LH    = 3.8   # body line height mm
+    LH_SM = 3.3   # table row height mm
+
+    def __init__(self, pdf):
+        self.pdf = pdf
+
+    # -- headings -----------------------------------------------------------
+
+    def h1(self, text: str) -> None:
+        p = self.pdf
+        p.ln(2.5)
+        p.set_font("Helvetica", "B", self.HEAD1)
+        p.multi_cell(0, 5, _clean(text))
+        p.set_draw_color(90, 90, 90)
+        p.set_line_width(0.25)
+        p.line(p.l_margin, p.get_y(), p.w - p.r_margin, p.get_y())
+        p.ln(1.5)
+        p.set_font("Helvetica", "", self.BODY)
+
+    def h2(self, text: str) -> None:
+        p = self.pdf
+        p.ln(1.5)
+        p.set_font("Helvetica", "B", self.HEAD2)
+        p.multi_cell(0, 4.5, _clean(text))
+        p.set_font("Helvetica", "", self.BODY)
+
+    # -- body text ----------------------------------------------------------
+
+    def para(self, text: str) -> None:
+        if not text.strip():
+            return
+        self.pdf.set_font("Helvetica", "", self.BODY)
+        self.pdf.multi_cell(0, self.LH, _clean(text))
+
+    def blockquote(self, text: str) -> None:
+        p = self.pdf
+        p.set_font("Helvetica", "I", self.BODY - 0.5)
+        indent = 6
+        saved = p.l_margin
+        p.set_left_margin(saved + indent)
+        p.set_x(saved + indent)
+        p.multi_cell(0, self.LH, _clean(text))
+        p.set_left_margin(saved)
+
+    def bullet(self, text: str) -> None:
+        p = self.pdf
+        p.set_font("Helvetica", "", self.BODY)
+        indent = 5
+        saved = p.l_margin
+        p.set_left_margin(saved + indent)
+        p.set_x(saved + indent)
+        p.multi_cell(0, self.LH, "- " + _clean(text))
+        p.set_left_margin(saved)
+
+    def rule(self) -> None:
+        p = self.pdf
+        p.ln(1)
+        p.set_draw_color(190, 190, 190)
+        p.set_line_width(0.2)
+        p.line(p.l_margin, p.get_y(), p.w - p.r_margin, p.get_y())
+        p.ln(2)
+
+    def blank(self) -> None:
+        self.pdf.ln(1.2)
+
+    # -- tables -------------------------------------------------------------
+
+    def table(self, raw_lines: list[str]) -> None:
+        p = self.pdf
+
+        rows: list[list[str]] = []
+        for line in raw_lines:
+            parts = [c.strip() for c in line.strip().strip("|").split("|")]
+            is_sep = all(re.match(r"^[-: ]+$", c) for c in parts if c)
+            if not is_sep and parts:
+                rows.append(parts)
+
+        if len(rows) < 1:
+            return
+
+        headers   = rows[0]
+        data_rows = rows[1:]
+        n = len(headers)
+
+        col_w = _COL_WIDTHS.get(n, [int(160 / n)] * n)[:]
+        while len(col_w) < n:
+            col_w.append(20)
+
+        # Heuristic: if first-column header is very short (IDs), use narrow col
+        if n == 3:
+            first_max = max(
+                len(_clean(headers[0])),
+                max((len(_clean(r[0])) for r in data_rows), default=0),
+            )
+            if first_max <= 4:          # "C15", "ID"
+                col_w = [14, 93, 53]
+            else:                       # "Input", "Component", "Cost" style
+                col_w = [28, 98, 34]
+
+        cell_h = self.LH_SM
+
+        # Header row
+        p.set_fill_color(225, 225, 225)
+        p.set_font("Helvetica", "B", self.SMALL)
+        for i, h in enumerate(headers):
+            w = col_w[i] if i < len(col_w) else 20
+            p.cell(w, cell_h, _clean(h), border=1, fill=True)
+        p.ln()
+
+        # Data rows
+        p.set_font("Helvetica", "", self.SMALL)
+        for row in data_rows:
+            while len(row) < n:
+                row.append("")
+            for i in range(n):
+                w   = col_w[i] if i < len(col_w) else 20
+                txt = _clean(row[i])
+                # Truncate to fit cell (rough: 1.55 chars per mm at 6.5pt)
+                max_ch = max(4, int(w * 1.55))
+                if len(txt) > max_ch:
+                    txt = txt[: max_ch - 2] + ".."
+                p.cell(w, cell_h, txt, border=1)
+            p.ln()
+
+        p.ln(1)
+        p.set_font("Helvetica", "", self.BODY)
 
 
-def build_pdf(entries: dict, evidence_graph: list[dict]) -> Path:
+# ---------------------------------------------------------------------------
+# Markdown parser / PDF dispatcher
+# ---------------------------------------------------------------------------
+
+def render_from_memo_md(pdf, memo_path: Path) -> None:
+    r = MemoRenderer(pdf)
+
+    with open(memo_path, encoding="utf-8") as f:
+        content = f.read()
+
+    # Drop the metadata preamble (everything up to the first ---\n boundary).
+    idx = content.find("\n---\n")
+    body = content[idx + 5:] if idx != -1 else content
+
+    table_buf: list[str] = []
+    prev_blank = False
+
+    def flush_table() -> None:
+        nonlocal table_buf
+        if table_buf:
+            r.table(table_buf)
+            table_buf.clear()
+
+    for line in body.split("\n"):
+        s = line.strip()
+
+        if s.startswith("|"):
+            table_buf.append(s)
+            prev_blank = False
+            continue
+        flush_table()
+
+        if s.startswith("## "):
+            r.h1(s[3:])
+        elif s.startswith("### ") or s.startswith("#### "):
+            r.h2(s.lstrip("#").strip())
+        elif s == "---":
+            r.rule()
+        elif s.startswith("> "):
+            r.blockquote(s[2:])
+        elif s.startswith("- ") or s.startswith("* "):
+            r.bullet(s[2:])
+        elif s == "":
+            if not prev_blank:
+                r.blank()
+        else:
+            r.para(s)
+
+        prev_blank = s == ""
+
+    flush_table()
+
+
+# ---------------------------------------------------------------------------
+# Top-level PDF builder
+# ---------------------------------------------------------------------------
+
+def build_pdf() -> Path:
     try:
         from fpdf import FPDF
     except ImportError:
-        print("fpdf2 not installed -- install with: pip install fpdf2", file=sys.stderr)
+        print("fpdf2 not installed -- pip install fpdf2", file=sys.stderr)
         sys.exit(1)
 
-    instructor = entries.get("instructor-baseline", {})
-    day1 = entries.get("day1-baseline", {})
-    mechanism = entries.get("mechanism-eval", {})
-
-    p_instructor = instructor.get("pass_at_1", 0.7267)
-    p_day1 = day1.get("pass_at_1", 0.1333)
-    p_mech = mechanism.get("pass_at_1")
-    mech_ci = mechanism.get("confidence_interval_95")
-
-    delta = round(p_mech - p_day1, 4) if p_mech is not None else None
-    delta_pct = round(delta / p_day1 * 100, 1) if delta is not None else None
-
-    ci_str = f"[{mech_ci[0]:.3f}, {mech_ci[1]:.3f}]" if mech_ci else "n/a"
-    p_mech_str = f"{p_mech:.4f}" if p_mech is not None else "pending"
-    delta_str = f"{delta:+.4f} ({delta_pct:+.1f}%)" if delta is not None else "pending"
+    memo_path = ROOT / "memo.md"
+    if not memo_path.exists():
+        print(f"ERROR: memo.md not found at {memo_path}", file=sys.stderr)
+        sys.exit(1)
 
     pdf = FPDF(format="Letter")
-    pdf.set_margins(25, 20, 25)
-    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_margins(22, 16, 22)
+    pdf.set_auto_page_break(auto=True, margin=16)
     pdf.add_page()
 
-    # ── Title block ──────────────────────────────────────────────────────────
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 8, "The Conversion Engine: Mechanism Design Memo", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 5, "Tenacious Consulting and Outsourcing  |  Act IV  |  2026-04-24", ln=True)
-    pdf.ln(3)
+    # Custom title block (replaces the # heading in memo.md)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.cell(0, 6.5, "The Conversion Engine -- Decision Memo", ln=True)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.cell(0, 4, "For: Tenacious Consulting and Outsourcing -- CEO / CFO", ln=True)
+    pdf.cell(0, 4, "From: Kirubel Tewodros, 10 Academy Week 10  |  Date: 2026-04-25", ln=True)
+    pdf.cell(0, 4, "Mechanism: Confidence-Proportional Phrasing Gates (Act IV)", ln=True)
     pdf.set_draw_color(0, 0, 0)
-    pdf.set_line_width(0.5)
-    pdf.line(25, pdf.get_y(), 185, pdf.get_y())
+    pdf.set_line_width(0.4)
+    pdf.line(22, pdf.get_y() + 1.5, pdf.w - 22, pdf.get_y() + 1.5)
     pdf.ln(4)
 
-    # ── Section 1: Problem ───────────────────────────────────────────────────
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "1. Problem: Signal Over-Claiming", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    body1 = (
-        "Signal-grounded outreach is Tenacious's core differentiator -- 4-7x reply rate "
-        "advantage over generic cold email. The target failure mode identified in Act III "
-        "(Probe P-006 through P-010) is signal over-claiming: the agent asserts hiring "
-        "velocity, AI maturity, or leadership signals using certain language when the "
-        "underlying evidence does not support that certainty.\n\n"
-        "This failure destroys the research-quality impression on first contact. A CTO who "
-        "receives an email asserting 'your team is scaling aggressively' and counts 4 open "
-        "roles on their own job board (below the 5-role signal threshold) will not reply. "
-        "At 1,000 outbound touches, the delta between correct-signal and wrong-signal "
-        "outreach is approximately $2.4M in pipeline (see evidence graph, C5). Wrong-signal "
-        "reply rates fall below generic cold-email baseline (<1%), eliminating the entire "
-        "signal-grounding advantage.\n\n"
-        "Trigger conditions: AI maturity score derived from <=2 medium-weight inputs; "
-        "job-post count <5; stale data (GitHub >6 months, funding >180 days, layoffs >120 days). "
-        "Estimated frequency: 30-50% of the prospect list (C4)."
+    render_from_memo_md(pdf, memo_path)
+
+    # Footer on last page
+    pdf.set_y(-14)
+    pdf.set_font("Helvetica", "I", 7)
+    pdf.cell(
+        0, 4,
+        f"Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}"
+        " | Full evidence graph: evidence_graph.json",
+        ln=True,
     )
-    pdf.multi_cell(0, 4.5, body1)
-    pdf.ln(3)
 
-    # ── Section 2: Mechanism ─────────────────────────────────────────────────
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "2. Mechanism: Confidence-Proportional Phrasing Gates", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    body2 = (
-        "The enrichment pipeline (agent/enrichment.py) already produces per-signal confidence "
-        "scores (0.0-1.0) for all four signal sources: Crunchbase ODM, job posts, layoffs.fyi, "
-        "and leadership changes. The confidence is computed but never consulted when generating "
-        "outbound language. The fix is a phrasing gate -- a pure function inserted between "
-        "EnrichmentArtifact and prompt rendering that maps confidence levels to constrained "
-        "language templates.\n\n"
-        "Gate tiers: High (>=0.70) -> assertive language; "
-        "Medium (0.40-0.69) -> inquiry framing ('does that match your roadmap?'); "
-        "Low (0.20-0.39) -> hypothesis language ('teams at your stage often...'); "
-        "Absent (<0.20) -> abstention, no AI maturity claim made.\n\n"
-        "A staleness override downgrades any signal exceeding its validity window "
-        "(job posts: 30d; funding: 180d; layoffs: 120d; leadership: 90d) regardless of "
-        "numeric confidence. The gate is injected as a <phrasing_constraints> block in "
-        "the system prompt, constraining the LLM to tier-appropriate language patterns "
-        "before any email copy is drafted.\n\n"
-        "Implementation cost: zero additional API calls, zero latency overhead, "
-        "zero architectural changes (C8). Fully reversible."
-    )
-    pdf.multi_cell(0, 4.5, body2)
-    pdf.ln(3)
-
-    # ── Section 3: Results table ─────────────────────────────────────────────
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "3. Evaluation Results (t2-bench Retail, 20 Tasks, 1 Trial)", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-
-    # Table
-    col_w = [60, 40, 45, 45]
-    headers = ["Condition", "Model", "pass@1", "95% CI"]
-    rows = [
-        ["A - Instructor baseline", "gpt-4.1 (ref)", f"{p_instructor:.4f}", "[0.6504, 0.7917]"],
-        ["B - Day-1 baseline (control)", "llama-3.3-70b", f"{p_day1:.4f}", "[0.053, 0.297]"],
-        ["C - Mechanism eval (treatment)", "gpt-4o-mini", p_mech_str, ci_str],
-        ["Delta A (C - B)", "--", delta_str, "--"],
-    ]
-
-    pdf.set_fill_color(220, 220, 220)
-    pdf.set_font("Helvetica", "B", 8)
-    for i, h in enumerate(headers):
-        pdf.cell(col_w[i], 5, h, border=1, fill=True)
-    pdf.ln()
-    pdf.set_font("Helvetica", "", 8)
-    for row in rows:
-        for i, cell in enumerate(row):
-            pdf.cell(col_w[i], 5, str(cell), border=1)
-        pdf.ln()
-    pdf.ln(3)
-
-    pdf.set_font("Helvetica", "", 9)
-    results_body = (
-        "The mechanism evaluation shows a pass@1 improvement from 0.1333 (Day-1, no phrasing "
-        "gate) to " + p_mech_str + " with gpt-4o-mini and confidence-proportional phrasing "
-        "constraints. The improvement is consistent with the mechanism's design: gpt-4o-mini "
-        "is more calibrated about assertion certainty than llama-3.3-70b at temperature=0, "
-        "and the phrasing gate further constrains assertive language to high-confidence signals "
-        "only. The retail qualification scenarios in t2-bench reward exactly this behavior -- "
-        "agents that avoid asserting unverifiable facts score higher under the dual-control grader."
-    )
-    pdf.multi_cell(0, 4.5, results_body)
-
-    # ── PAGE 2 ───────────────────────────────────────────────────────────────
-    pdf.add_page()
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "4. Ablation Summary", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    ablation_body = (
-        "Three ablation conditions are recorded in ablation_results.json:\n\n"
-        "  - control_no_gate: Day-1 baseline (llama-3.3-70b, no phrasing gate). "
-        f"pass@1={p_day1:.4f}. Source: eval/score_log.json (day1-baseline). Measured.\n\n"
-        "  - treatment_gpt4omini: gpt-4o-mini on held-out slice with confidence-proportional "
-        f"phrasing gate applied. pass@1={p_mech_str}. Source: tau2-bench retail, 20 tasks, "
-        "1 trial. Measured.\n\n"
-        "  - delta_a: treatment - control = " + delta_str + ". Positive delta confirms "
-        "mechanism improves on the target failure mode. Source: derived from above two entries."
-    )
-    pdf.multi_cell(0, 4.5, ablation_body)
-    pdf.ln(3)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "5. Failure Mode Coverage", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    coverage_body = (
-        "The phrasing gate directly addresses Signal Over-Claiming (Category 1, Probes P-006 "
-        "through P-010). The gate maps each enrichment signal's confidence to a constrained "
-        "language tier, preventing assertive language for unverified signals.\n\n"
-        "Secondary coverage: Gap Over-Claiming (Category 7, Probes P-032-P-033) benefits "
-        "because competitor gap findings pass through the same gate; low-confidence gap "
-        "analyses are demoted to hypothesis language.\n\n"
-        "Out of scope for this Act: ICP Misclassification (Category 2) would require a "
-        "classifier change; Bench Over-Commitment (Category 3) requires a hard constraint "
-        "on bench summary lookups; Multi-Thread Leakage (Category 9) requires an architecture "
-        "change. All are documented in probes/failure_taxonomy.md."
-    )
-    pdf.multi_cell(0, 4.5, coverage_body)
-    pdf.ln(3)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "6. Business Case Summary", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    biz_body = (
-        "Signal-grounded reply rate (top-quartile): 7-12% (C6). "
-        "Wrong-signal reply rate: <1%, below generic cold-email baseline. "
-        "Discovery-call-to-proposal conversion: 35-50%. Proposal-to-close: 25-40%. "
-        "ACV (talent outsourcing): $240K-$720K. "
-        "Pipeline delta at 1,000 touches: ~$2.4M (C5).\n\n"
-        "Brand-damage threshold: at >3% wrong-signal rate (>30 emails per 1,000), "
-        "negative anecdotes in the CTO/VP peer network materially affect inbound "
-        "conversion for 12+ months. The phrasing gate targets the root cause of "
-        "wrong-signal generation at zero additional cost, protecting both pipeline "
-        "and brand equity.\n\n"
-        "ROI calculation: The mechanism requires no new API calls, no additional "
-        "latency, and no architectural changes. Expected reply-rate improvement "
-        "from eliminating wrong-signal outreach: +4-7 percentage points on the "
-        "affected 30-50% of the list. Expected annual pipeline impact for a "
-        "1,000-prospect list: $0.7M-$1.2M additional closed revenue."
-    )
-    pdf.multi_cell(0, 4.5, biz_body)
-    pdf.ln(3)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, "7. Evidence Trail", ln=True)
-    pdf.set_font("Helvetica", "", 9)
-    evidence_body = "Every numeric claim in this memo traces to a file in this repository:\n"
-    pdf.multi_cell(0, 4.5, evidence_body)
-
-    # Evidence mini-table
-    e_col_w = [12, 80, 98]
-    pdf.set_fill_color(220, 220, 220)
-    pdf.set_font("Helvetica", "B", 7)
-    for h, w in zip(["ID", "Claim", "Source"], e_col_w):
-        pdf.cell(w, 4.5, h, border=1, fill=True)
-    pdf.ln()
-    pdf.set_font("Helvetica", "", 7)
-    for e in evidence_graph[:8]:
-        vals = [e["claim_id"], e["claim"][:75] + ("..." if len(e["claim"]) > 75 else ""), e["source_file"]]
-        for i, (v, w) in enumerate(zip(vals, e_col_w)):
-            pdf.cell(w, 4.5, str(v), border=1)
-        pdf.ln()
-    pdf.ln(2)
-
-    pdf.set_font("Helvetica", "I", 8)
-    pdf.cell(0, 5, f"Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')} | Full evidence graph: evidence_graph.json", ln=True)
-
-    out_path = ROOT / "memo.pdf"
-    pdf.output(str(out_path))
-    return out_path
+    out = ROOT / "memo.pdf"
+    pdf.output(str(out))
+    return out
 
 
-def main():
-    entries = load_score_data()
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    entries        = load_score_data()
     evidence_graph = build_evidence_graph(entries)
 
     out_graph = ROOT / "evidence_graph.json"
@@ -376,7 +475,7 @@ def main():
         )
     print(f"evidence_graph.json written: {len(evidence_graph)} claims")
 
-    out_pdf = build_pdf(entries, evidence_graph)
+    out_pdf = build_pdf()
     print(f"memo.pdf written: {out_pdf}")
 
 

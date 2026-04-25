@@ -2,3 +2,35 @@
 .env
 .env.*
 !.env.example
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Internal agent state
+memory/
+
+# Utility scripts
+check_balance.py
+
+# Runtime artifacts
+artifacts/logs/
+artifacts/prompts/
+artifacts/reports/
+
+# Scorer test artifacts (unknown.json written during verification runs)
+eval/scoring_rationales/unknown.json
+
+# Large seed binaries not needed for code review
+input/*.docx
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude internal
+.claude/

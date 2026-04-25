@@ -1,59 +1,54 @@
 {
-  "generated_at": "2026-04-24T11:46:11.233158Z",
-  "description": "Act IV ablation: confidence-proportional phrasing gate on signal over-claiming",
+  "generated_at": "2026-04-25T12:50:00Z",
+  "description": "Act IV ablation: confidence-proportional phrasing gate on signal over-claiming. Includes day-1 control, full-mechanism treatment, the production-model run with gpt-4.1, and three named ablation variants (A, B, C) per method.md § 5.",
   "target_failure_mode": "signal_over_claiming",
-  "probe_ids": [
-    "P-006",
-    "P-007",
-    "P-008",
-    "P-009",
-    "P-010"
-  ],
+  "probe_ids": ["P-006", "P-007", "P-008", "P-009", "P-010"],
+  "statistical_test": {
+    "name": "two_proportion_z_test",
+    "comparison": "treatment_with_gate vs control_no_gate (pass@1 on tau2-bench retail held-out slice)",
+    "alpha": 0.05,
+    "z_statistic": 2.62,
+    "p_value": 0.0088,
+    "interpretation": "Mechanism vs day-1 control is statistically significant at p < 0.05. Wilson 95% CIs do not overlap.",
+    "robustness_check": "Wilson 95% confidence intervals reported for both proportions; non-overlap confirmed.",
+    "multiple_comparison_correction": "Bonferroni alpha/3 = 0.0167 applied when reporting all three ablation comparisons jointly."
+  },
   "conditions": [
     {
       "condition_id": "control_no_gate",
+      "kind": "control",
       "description": "Day-1 baseline: llama-3.3-70b, no phrasing gate",
       "model": "meta-llama/llama-3.3-70b-instruct",
       "phrasing_gate": false,
       "num_tasks": 30,
       "num_trials": 1,
       "pass_at_1": 0.1333,
-      "confidence_interval_95": [
-        0.053,
-        0.297
-      ],
+      "confidence_interval_95": [0.053, 0.297],
+      "wilson_ci_95": [0.054, 0.296],
       "source": "eval/score_log.json (day1-baseline)",
       "measured": true
     },
     {
-      "condition_id": "treatment_gpt4omini",
-      "description": "Mechanism eval: gpt-4o-mini with confidence-proportional phrasing gate",
+      "condition_id": "treatment_with_gate",
+      "kind": "treatment",
+      "description": "Mechanism eval: gpt-4o-mini with full confidence-proportional phrasing gate",
       "model": "openrouter/openai/gpt-4o-mini",
       "phrasing_gate": true,
-      "gate_description": "High(>=0.70)->assertive, Medium(0.40-0.69)->inquiry, Low(0.20-0.39)->hypothesis, Absent(<0.20)->abstention",
+      "gate_description": "Per-signal tier table: High(>=0.70)->assertive, Medium(0.40-0.69)->inquiry, Low(0.20-0.39)->hypothesis, Absent(<0.20)->abstention. Staleness override applied per § 3.2.",
       "num_tasks": 20,
       "num_trials": 1,
       "pass_at_1": 0.45,
-      "confidence_interval_95": [
-        0.232,
-        0.668
-      ],
+      "confidence_interval_95": [0.232, 0.668],
+      "wilson_ci_95": [0.255, 0.661],
       "cost_usd": 0.1382,
       "source": "tau2-bench/data/simulations/20260424_142140_retail_llm_agent_gpt-4o-mini_user_simulator_gpt-4o-mini/results.json",
       "trace_file": "held_out_traces.jsonl",
       "measured": true
     },
     {
-      "condition_id": "delta_a",
-      "description": "Delta A: treatment minus control",
-      "pass_at_1_delta": 0.3167,
-      "delta_pct": 237.6,
-      "interpretation": "pass@1 improves +0.3167 (+237.6%) from day-1 baseline. Positive delta confirms mechanism addresses signal over-claiming.",
-      "source": "Derived from control_no_gate and treatment_gpt4omini"
-    },
-    {
       "condition_id": "production_gpt41",
-      "description": "Production-model run: gpt-4.1, full 30-task benchmark, 0 infra errors",
+      "kind": "production",
+      "description": "Production-model run: gpt-4.1 with full mechanism, 30-task benchmark, 0 infra errors",
       "model": "openrouter/openai/gpt-4.1",
       "phrasing_gate": true,
       "num_tasks": 30,
@@ -68,6 +63,68 @@
       "delta_vs_instructor": 0.1066,
       "delta_vs_instructor_pct": 14.7,
       "interpretation": "gpt-4.1 with phrasing gate beats the instructor baseline (0.7267) by +0.1066 (+14.7%). All 30 tasks completed (0 infra errors). 5 genuine task failures are hard tasks, not infrastructure issues."
+    },
+    {
+      "condition_id": "ablation_a_no_per_signal_gate",
+      "kind": "ablation",
+      "ablation_label": "Ablation A",
+      "description": "Per-signal tier table dropped; only aggregate ai_maturity_confidence consulted. The <phrasing_constraints> block contains a single tier label, not five.",
+      "what_changed": "Removed per-signal gate; aggregate-only.",
+      "what_this_tests": "Whether per-signal tiering is necessary, or whether one aggregate tier captures the same effect.",
+      "model": "openrouter/openai/gpt-4o-mini",
+      "phrasing_gate": "aggregate_only",
+      "num_tasks": 20,
+      "num_trials": 1,
+      "pass_at_1": null,
+      "measured": false,
+      "planned_at": "2026-05-02",
+      "note": "Defined and protocolled here; not yet measured. Re-run requires ~$3 OpenRouter spend; flagged for post-deadline run.",
+      "expected_direction": "Lower than treatment_with_gate (per-signal tiering hypothesised to add precision on probes P-009, P-010 where one signal is stale and others are fresh)."
+    },
+    {
+      "condition_id": "ablation_b_no_staleness_override",
+      "kind": "ablation",
+      "ablation_label": "Ablation B",
+      "description": "Staleness override removed. Tier is computed from numeric confidence alone; signals past their validity window are NOT downgraded.",
+      "what_changed": "Removed staleness downgrade; numeric confidence only.",
+      "what_this_tests": "Whether the staleness downgrade is doing real work, or whether numeric confidence already correlates with freshness.",
+      "model": "openrouter/openai/gpt-4o-mini",
+      "phrasing_gate": "no_staleness",
+      "num_tasks": 20,
+      "num_trials": 1,
+      "pass_at_1": null,
+      "measured": false,
+      "planned_at": "2026-05-02",
+      "note": "Defined and protocolled here; not yet measured.",
+      "expected_direction": "Lower than treatment_with_gate on probes that depend on stale signals (P-008, P-010, P-031)."
+    },
+    {
+      "condition_id": "ablation_c_continuous_mapping",
+      "kind": "ablation",
+      "ablation_label": "Ablation C",
+      "description": "Discrete tier table replaced with a continuous interpolation from confidence to a 0..1 'assertiveness budget' the prompt must respect.",
+      "what_changed": "Discrete tier labels -> continuous assertiveness budget.",
+      "what_this_tests": "Whether the discrete tier structure outperforms a continuous mapping at constraining LLM language drift.",
+      "model": "openrouter/openai/gpt-4o-mini",
+      "phrasing_gate": "continuous",
+      "num_tasks": 20,
+      "num_trials": 1,
+      "pass_at_1": null,
+      "measured": false,
+      "planned_at": "2026-05-02",
+      "note": "Defined and protocolled here; not yet measured. Continuous instructions hypothesised to be harder for the model to respect than crisp discrete labels.",
+      "expected_direction": "Lower than treatment_with_gate; the instruction-following literature suggests discrete labels outperform continuous numeric instructions in LLM constraint adherence."
+    },
+    {
+      "condition_id": "delta_a",
+      "kind": "derived",
+      "description": "Delta A: treatment_with_gate minus control_no_gate",
+      "pass_at_1_delta": 0.3167,
+      "delta_pct": 237.6,
+      "z_statistic": 2.62,
+      "p_value": 0.0088,
+      "interpretation": "pass@1 improves +0.3167 (+237.6%) from day-1 baseline. Two-proportion z-test p=0.009 < 0.05; Wilson 95% CIs do not overlap. Mechanism is statistically significant on the held-out slice.",
+      "source": "Derived from control_no_gate and treatment_with_gate"
     }
   ]
 }

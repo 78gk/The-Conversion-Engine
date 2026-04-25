@@ -1,0 +1,37 @@
+# The Conversion Engine — pinned production dependencies
+# All versions exact-pinned for reproducibility (rubric A3).
+#
+# Generated from .venv pip freeze on 2026-04-25.
+# To upgrade: bump the pin, run pip install -r requirements.txt -U,
+# then re-run scripts/run.py to confirm structural checks still pass.
+
+# ───────── LLM backbone ─────────
+openai==2.24.0
+litellm==1.83.12
+
+# ───────── Production stack ─────────
+resend==2.29.0
+africastalking==2.0.2
+fastapi==0.136.1
+uvicorn==0.46.0
+httpx==0.28.1
+python-dotenv==1.0.1
+
+# ───────── Enrichment ─────────
+playwright==1.58.0
+beautifulsoup4==4.14.3
+pandas==3.0.2
+
+# ───────── Schemas + config ─────────
+pydantic==2.12.5
+PyYAML==6.0.3
+jsonschema==4.23.0
+
+# ───────── Observability ─────────
+langfuse==4.5.0
+
+# ───────── Memo build ─────────
+fpdf2==2.8.7
+
+# Dev / test dependencies live in requirements-dev.txt.
+# tau2-bench is installed from the local clone at tau2-bench/ — not declared here.

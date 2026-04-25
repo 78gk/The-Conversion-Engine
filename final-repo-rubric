@@ -1,0 +1,538 @@
+# RUBRIC.md
+
+> **Purpose:** This file is the canonical grading rubric for AI agents reviewing this repository before submission. Agents must evaluate each criterion, assign a score, identify gaps, and iteratively improve the repository until every criterion reaches **5 points (Robust and Complete)**. Do not submit until all eight criteria score 5.
+
+---
+
+## How to Use This Rubric (Agent Instructions)
+
+```
+FOR EACH criterion in this rubric:
+  1. READ every sub-check listed under the criterion
+  2. SCAN the repository for evidence satisfying each sub-check
+  3. ASSIGN the matching score tier (0, 1, 3, or 5)
+  4. LIST every missing or incomplete item as a concrete TODO
+  5. IMPLEMENT fixes until the criterion scores 5
+  6. RE-EVALUATE after each change to confirm the score moved up
+REPEAT until all eight criteria score 5/5
+THEN output a final scorecard with evidence citations for each criterion
+```
+
+---
+
+## Scoring Tiers (Global Reference)
+
+| Points | Label |
+|--------|-------|
+| **5** | Robust and Complete |
+| **3** | Correct but Incomplete |
+| **1** | Present but Flawed |
+| **0** | Absent |
+
+---
+
+## Criterion 1 — Architecture and Inheritor Readiness
+
+**What is being evaluated:** Documentation as a product. No code execution. Every check is satisfied by reading repo contents.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| A1 | Architecture diagram present | `README.md`, `docs/`, any `.md` file | Diagram (ASCII, Mermaid, image, or equivalent) shows **full** data flow: signal enrichment → channel handlers → CRM → calendar → backbone LLM → observability layer |
+| A2 | Setup instructions — prerequisites | `README.md` or `docs/setup.md` | Environment prerequisites explicitly listed (OS, runtime versions, accounts needed) |
+| A3 | Setup instructions — pinned dependency versions | `requirements.txt`, `pyproject.toml`, `package.json`, or equivalent | Every dependency has a pinned version (e.g., `==x.y.z`, no bare `>=` without upper bound) |
+| A4 | Setup instructions — configuration variables | `.env.example` or documented in README | Every environment variable listed with name, expected format, and plain-English explanation |
+| A5 | Setup instructions — explicit run order | `README.md` or `docs/` | Numbered or ordered steps for local bootstrapping from clone to running system |
+| A6 | Directory index | `README.md` or `docs/` | Every **top-level folder** mapped to its purpose in 1–2 sentences |
+| A7 | Handoff notes | `README.md`, `HANDOFF.md`, or `docs/` | A dedicated "Known Limitations" or "Next Steps" section with **concrete, specific items** a successor would encounter |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+All seven sub-checks (A1–A7) satisfied. Architecture diagram covers the full pipeline including observability. Setup instructions are complete, pinned, and ordered. Every top-level folder is indexed. Handoff notes reference concrete items.
+
+#### ⚠️ 3 — Correct but Incomplete
+README describes the system at a high level, identifies major components, includes some setup steps, and reflects actual repository layout. **Missing one or more of:** architecture diagram, full setup prerequisites or env vars, pinned dependencies, directory index, limitations or handoff notes.
+
+#### 🔴 1 — Present but Flawed
+README exists and is non-empty, but lacks an architecture description a new engineer could use, setup instructions are placeholder or generic, or structure described does not match actual repo contents.
+
+#### ⛔ 0 — Absent
+No README, or the README does not describe the system built.
+
+### Agent TODO Template
+```
+[ ] A1: Add/complete architecture diagram showing enrichment→channels→CRM→calendar→LLM→observability
+[ ] A2: Add prerequisites section (OS, Python/Node version, required accounts)
+[ ] A3: Pin all dependencies to exact versions
+[ ] A4: Add .env.example with every variable explained
+[ ] A5: Add numbered run-order steps for local bootstrapping
+[ ] A6: Add directory index mapping every top-level folder
+[ ] A7: Add HANDOFF.md or Known Limitations section with concrete successor items
+```
+
+---
+
+## Criterion 2 — Multi-Channel Production Integration
+
+**What is being evaluated:** Integration code structure and wiring, not signal content. Every check is static (no execution).
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| B1 | Email — send handler | `integrations/email/`, `handlers/` | Send function wired to Resend or MailerSend API with structured error handling visible in source |
+| B2 | Email — reply webhook handler | `integrations/email/`, `webhooks/` | Inbound reply webhook handler exists with structured error handling |
+| B3 | SMS — send handler | `integrations/sms/` | Send function wired to Africa's Talking API |
+| B4 | SMS — inbound webhook handler | `integrations/sms/`, `webhooks/` | Inbound SMS webhook handler exists |
+| B5 | SMS — warm-lead gate | `integrations/sms/` or channel logic | Code path that **only permits SMS sends after a prior email reply** is visible as a conditional check in source |
+| B6 | HubSpot MCP — contact creation | `integrations/hubspot/` | Client code for contact creation exists |
+| B7 | HubSpot MCP — activity logging | `integrations/hubspot/` | Client code for activity logging exists |
+| B8 | HubSpot MCP — enrichment field writes | `integrations/hubspot/` | Client code for enrichment field writes exists |
+| B9 | HubSpot MCP — multiple event points | `integrations/hubspot/` or call sites | HubSpot writes invoked at **multiple distinct conversation event points** in source |
+| B10 | Cal.com — booking link generation | `integrations/calcom/` | Client code generates booking links (not hard-coded URLs) |
+| B11 | Cal.com — confirmation handling | `integrations/calcom/` or `webhooks/` | Confirmation event handler exists |
+| B12 | Cal.com — referenced from both channels | Email and SMS handler files | Cal.com link or handler imported/called from both email and SMS code paths |
+| B13 | Channel handoff logic — centralized | `orchestration/`, `state_machine/`, or equivalent | Handoff logic lives in a **single centralized module or state machine**, not scattered across individual handlers |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+All four integrations fully wired with structured error handling. SMS has a visible warm-lead gate (B5). HubSpot writes occur at multiple conversation event points (B9). Cal.com links generated through client code and referenced from both email and SMS handlers (B10–B12). Channel handoff logic centralized (B13).
+
+#### ⚠️ 3 — Correct but Incomplete
+All four integrations exist with credentials loaded from environment variables and happy-path send/receive flows wired. **Missing one or more of:** reply webhook handler, visible warm-lead gate, multiple HubSpot event write paths, generated Cal.com links, centralized handoff module.
+
+#### 🔴 1 — Present but Flawed
+At least two integrations exist as code, but one or more are stub functions, commented out, or reference libraries not declared in requirements. Channel priority may be inverted (SMS before email reply check), or no reply ingestion code path exists.
+
+#### ⛔ 0 — Absent
+Fewer than two integrations exist in source, or no agent directory is present.
+
+### Agent TODO Template
+```
+[ ] B1: Wire email send handler to Resend/MailerSend with try/except + structured error response
+[ ] B2: Implement email reply webhook handler
+[ ] B3: Wire SMS send handler to Africa's Talking
+[ ] B4: Implement inbound SMS webhook handler
+[ ] B5: Add warm-lead gate: assert prior_email_reply_exists() before any SMS send
+[ ] B6-B8: Implement HubSpot contact creation, activity logging, enrichment writes
+[ ] B9: Call HubSpot write at ≥2 distinct conversation events (e.g., first contact + reply received)
+[ ] B10: Implement Cal.com booking link generation via API client
+[ ] B11: Implement Cal.com confirmation webhook handler
+[ ] B12: Import and call Cal.com client from both email and SMS handler files
+[ ] B13: Create centralized channel_orchestrator.py (or equivalent) containing all handoff logic
+```
+
+---
+
+## Criterion 3 — Hiring Signal Enrichment Pipeline
+
+**What is being evaluated:** The four hiring signals and the merged brief they feed into only. AI maturity scoring and competitor gap briefs are scored separately.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| C1 | Crunchbase signal module | `signals/crunchbase/` | Dedicated module/function for ODM lookup with **funding filter** applied in source |
+| C2 | Job post scraping module | `signals/job_posts/` | Playwright-based scraper covering BuiltIn, Wellfound, **and** LinkedIn public pages |
+| C3 | Scraping compliance | `signals/job_posts/` | `robots.txt` handling and public-page-only constraints visible as **code or comments** |
+| C4 | Layoffs signal module | `signals/layoffs/` | Module parsing `layoffs.fyi` CSV data |
+| C5 | Leadership change module | `signals/leadership/` | Module detecting leadership changes from press releases or Crunchbase records |
+| C6 | Merged brief schema | `schemas/`, `models/`, or committed example file | `hiring_signal_brief` schema defined in code or committed artifact with **per-signal timestamps** and **source attribution** fields |
+| C7 | Confidence fields | Schema or signal return values | Each signal carries a `confidence` or `evidence_strength` field, not a bare value |
+| C8 | Edge case handling | Each signal module | Missing Crunchbase record, zero open jobs, no layoff history, and no leadership change in window are all **explicitly handled** in source (not crash or silent empty return) |
+| C9 | Job post velocity as 60-day delta | `signals/job_posts/` | Velocity computed as change over a **60-day window**, not a point count |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+All four signal modules implemented (C1–C5). Scraper respects robots.txt and public pages (C3). Merged brief schema defined with per-signal timestamps, source attribution, and confidence fields (C6–C7). Edge cases handled in source (C8). Job post velocity computed as a 60-day delta (C9).
+
+#### ⚠️ 3 — Correct but Incomplete
+All four signal sources have working fetch and parse code, and a merged brief schema is defined. **Missing one or more of:** per-signal confidence field, source attribution or timestamp, robots.txt handling, edge case handling beyond crash or silent empty return, or 60-day delta computation for velocity.
+
+#### 🔴 1 — Present but Flawed
+Two or three of the four signal sources implemented, but multiple sources are stubs returning fixed values, the merged brief is an unstructured string rather than a schema, or scraping code is present but does not parse listing content.
+
+#### ⛔ 0 — Absent
+No enrichment pipeline exists, or no merged brief schema is defined.
+
+### Agent TODO Template
+```
+[ ] C1: Implement crunchbase.py with ODM lookup + funding_round filter
+[ ] C2: Implement job_post_scraper.py with Playwright covering BuiltIn + Wellfound + LinkedIn public
+[ ] C3: Add robots.txt fetch-and-check before scraping; add comment asserting public-page-only
+[ ] C4: Implement layoffs.py parsing layoffs.fyi CSV
+[ ] C5: Implement leadership_change.py from press/Crunchbase records
+[ ] C6: Define HiringSignalBrief schema (Pydantic or JSON Schema) with per_signal_timestamp + source_attribution
+[ ] C7: Add confidence: float field to every signal model
+[ ] C8: Add explicit handlers for each edge case (no record, zero jobs, no layoffs, no leadership change)
+[ ] C9: Compute velocity = job_count(today) - job_count(60_days_ago), not len(current_listings)
+```
+
+---
+
+## Criterion 4 — AI Maturity Scoring System
+
+**What is being evaluated:** The AI maturity subsystem only. The four hiring signals are scored separately under Criterion 3.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| D1 | High-weight signals collected | `scoring/ai_maturity/` | Collection code for **AI-adjacent open roles** and **named AI/ML leadership** |
+| D2 | Medium-weight signals collected | `scoring/ai_maturity/` | Collection code for **public GitHub org activity** and **executive commentary** |
+| D3 | Low-weight signals collected | `scoring/ai_maturity/` | Collection code for **modern data/ML stack** and **strategic communications** |
+| D4 | Scoring function signature | `scoring/ai_maturity/scorer.py` or equivalent | Function takes structured signal inputs, returns **integer 0–3** |
+| D5 | Weighted combination | Scoring function body | Signal weights in source align with high/medium/low tiers specified |
+| D6 | Per-signal justification | Return value or output schema | Justification text attached per-signal to the return value |
+| D7 | Confidence field | Output schema | A `confidence` field **distinct from the score** in output schema, reflecting signal strength |
+| D8 | Silent company handling | Scoring function | Score `0` returned when no public signal found; output **explicitly acknowledges** absence ≠ proof of absence |
+| D9 | Score rationale persisted | Storage or output layer | Score rationale stored/persisted alongside the brief, not discarded |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+Collection code for all six input categories (D1–D3). Scoring function returns integer 0–3 with per-signal justification (D4, D6). Weights match high/medium/low tiers (D5). Separate confidence field in output schema (D7). Silent company case handled explicitly (D8). Score rationale persisted alongside the brief (D9).
+
+#### ⚠️ 3 — Correct but Incomplete
+Scoring function takes signals from at least four of the six input categories and returns integer 0–3 with roughly matching weights. **Missing one or more of:** full six-category coverage, per-signal justification, separate confidence field, correct tier weighting, or distinct silent company handling.
+
+#### 🔴 1 — Present but Flawed
+Some AI maturity scoring code exists, but the score is a single model call with no weighted inputs, return range is not 0–3, fewer than three input categories collected, justification absent, or scoring logic is hard-coded or random.
+
+#### ⛔ 0 — Absent
+No AI maturity scoring code exists.
+
+### Signal Weight Reference Table
+
+| Tier | Signals | Expected Weight Ratio |
+|------|---------|----------------------|
+| High | AI-adjacent open roles, Named AI/ML leadership | Highest (e.g., 3x) |
+| Medium | Public GitHub org activity, Executive commentary | Mid (e.g., 2x) |
+| Low | Modern data/ML stack, Strategic communications | Base (e.g., 1x) |
+
+### Agent TODO Template
+```
+[ ] D1: Collect AI-adjacent open roles + named AI/ML leadership (high-weight)
+[ ] D2: Collect public GitHub org activity + executive commentary (medium-weight)
+[ ] D3: Collect modern data/ML stack evidence + strategic comms (low-weight)
+[ ] D4: score(signals: SignalBundle) -> int where return value in {0,1,2,3}
+[ ] D5: Apply weights: high=3, medium=2, low=1 (or documented equivalent ratio)
+[ ] D6: Return {"score": int, "justifications": {"signal_name": "reason", ...}}
+[ ] D7: Add "confidence": float to output schema, separate from score
+[ ] D8: Add explicit branch: if no_signals_found: return {score:0, note:"absence not proof of absence"}
+[ ] D9: Persist score + rationale to HubSpot enrichment field or local store alongside brief
+```
+
+---
+
+## Criterion 5 — Competitor Gap Brief Generation
+
+**What is being evaluated:** The artifact that converts outbound from a pitch into a research finding.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| E1 | Competitor selection yields 5–10 firms | `briefs/competitor/` | Code identifies **5 to 10** top-quartile competitors in the prospect's sector |
+| E2 | Selection criteria documented | Source code comments or adjacent doc | Criteria for "top-quartile" selection documented in code or adjacent doc |
+| E3 | Same scoring applied to competitors | Call sites in competitor brief code | The **same AI maturity scoring function** (Criterion 4) invoked against each competitor |
+| E4 | Distribution position computation | `briefs/competitor/` | A function/computation in source returning **where the prospect sits** in the sector distribution |
+| E5 | Gap extraction with evidence | `briefs/competitor/` | Code returns **2–3 specific practices** with public-signal evidence fields attached (named role, named tool, named public statement) |
+| E6 | Schema definition | `schemas/` or committed artifact | `competitor_gap_brief.json` (or equivalent) schema defined in code or committed example artifact |
+| E7 | Sparse sector handling | `briefs/competitor/` | Fewer-than-5-viable-competitors case is **explicitly handled** in source |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+Competitor selection yields 5–10 top-quartile firms with documented criteria (E1–E2). Same scoring applied to competitors (E3). Distribution-position computation in source (E4). Gap extraction returns 2–3 practices with public-signal evidence fields (E5). Schema defined (E6). Sparse sector case handled (E7).
+
+#### ⚠️ 3 — Correct but Incomplete
+Competitor selection, scoring, and brief assembly code exist, with a structured brief example for at least one test prospect committed. **Missing one or more of:** competitor count in 5–10 range with justification, public-signal evidence fields, distribution-position computation, or sparse sector handling.
+
+#### 🔴 1 — Present but Flawed
+Some competitor comparison logic exists, but competitors are hard-coded or drawn from a different scoring rubric than the prospect, gap claims are LLM-generated without public-signal grounding fields, or no structured JSON schema defined.
+
+#### ⛔ 0 — Absent
+No competitor gap brief code exists.
+
+### Agent TODO Template
+```
+[ ] E1: implement select_competitors(prospect, sector) -> List[Competitor] with 5≤len≤10 enforced
+[ ] E2: Document selection criteria (e.g., same sector, >$10M ARR, public presence) in docstring or CRITERIA.md
+[ ] E3: Call score_ai_maturity(competitor) for each competitor using Criterion 4 scorer
+[ ] E4: Implement compute_distribution_position(prospect_score, competitor_scores) -> percentile/rank
+[ ] E5: Return gaps as [{"practice": str, "evidence": {"source": str, "named_entity": str}}, ...]
+[ ] E6: Define and commit schemas/competitor_gap_brief.json with all fields
+[ ] E7: Add: if len(viable_competitors) < 5: handle_sparse_sector() with documented fallback
+```
+
+---
+
+## Criterion 6 — Adversarial Probe Library
+
+**What is being evaluated:** The probe library's volume, structure, category coverage, specificity to talent outsourcing, and diagnostic quality.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| F1 | Volume ≥ 30 probes | `probes/`, `adversarial/`, or equivalent | At least **30 structured probe entries** |
+| F2 | Each probe has all required fields | Probe file | Every probe has: `probe_id`, `category`, `setup`, `expected_failure_signature`, `observed_trigger_rate`, `business_cost_framing` |
+| F3 | Category: ICP misclassification | Probe file | ≥1 probe in this category |
+| F4 | Category: Hiring-signal over-claiming | Probe file | ≥1 probe in this category |
+| F5 | Category: Bench over-commitment | Probe file | ≥1 probe in this category |
+| F6 | Category: Tone drift from style guide | Probe file | ≥1 probe in this category |
+| F7 | Category: Multi-thread leakage | Probe file | ≥1 probe in this category |
+| F8 | Category: Cost pathology | Probe file | ≥1 probe in this category |
+| F9 | Category: Dual-control coordination | Probe file | ≥1 probe in this category |
+| F10 | Category: Scheduling edge cases (EU, US, East Africa) | Probe file | ≥1 probe covering cross-timezone scheduling |
+| F11 | Category: Signal reliability with false-positive notes | Probe file | ≥1 probe with explicit false-positive framing |
+| F12 | Category: Gap over-claiming | Probe file | ≥1 probe in this category |
+| F13 | Tenacious-specificity | Probe file | A **meaningful share** (≥40%) of probes are specific to talent outsourcing context (e.g., offshore-perception language, bench-to-brief mismatch, gap-brief condescension toward self-aware CTO) |
+| F14 | Diagnostic reproducibility | Each probe entry | Each probe is conceptually reproducible from the entry alone (setup is specific enough to re-run mentally) |
+
+### The Ten Required Categories
+
+```
+1. ICP misclassification
+2. Hiring-signal over-claiming
+3. Bench over-commitment
+4. Tone drift from style guide
+5. Multi-thread leakage
+6. Cost pathology
+7. Dual-control coordination
+8. Scheduling edge cases (EU + US + East Africa)
+9. Signal reliability with false-positive notes
+10. Gap over-claiming
+```
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+At least 30 structured probes, each with all six required fields (F1–F2). All ten categories covered (F3–F12). A meaningful share are Tenacious-specific (F13). Each probe is diagnostic and conceptually reproducible from the entry alone (F14).
+
+#### ⚠️ 3 — Correct but Incomplete
+30+ probes in a structured format covering most required categories. **Missing one or more of:** full ten-category coverage, Tenacious-specific framing across most entries, trigger rates, or populated business-cost fields.
+
+#### 🔴 1 — Present but Flawed
+Probe library file exists with some entries, but fewer than 30 probes, entries are unstructured prose, no categorization exists, or no failure signatures defined.
+
+#### ⛔ 0 — Absent
+No probe library file, or the file is empty or placeholder.
+
+### Required Probe Schema
+```json
+{
+  "probe_id": "string (e.g., PROBE-001)",
+  "category": "string (one of the ten categories)",
+  "setup": "string (specific scenario that triggers the failure)",
+  "expected_failure_signature": "string (what the agent does wrong)",
+  "observed_trigger_rate": "string or float (e.g., '3/10 runs' or 0.3)",
+  "business_cost_framing": "string (cost in Tenacious-specific terms)"
+}
+```
+
+### Agent TODO Template
+```
+[ ] F1: Ensure probe count ≥ 30 (count entries in probe file)
+[ ] F2: Add missing fields to any probe lacking probe_id/category/setup/expected_failure_signature/observed_trigger_rate/business_cost_framing
+[ ] F3-F12: Add at least one probe per category for all ten required categories
+[ ] F13: Review probes — ensure ≥40% reference talent outsourcing specifics (offshore language, bench-to-brief, CTO condescension, etc.)
+[ ] F14: Review each setup field — ensure it's specific enough to reproduce the scenario mentally
+```
+
+---
+
+## Criterion 7 — Failure Taxonomy and Target Failure Mode
+
+**What is being evaluated:** Two files: the taxonomy grouping all probes, and the target failure mode document.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| G1 | Taxonomy covers every probe | `taxonomy.md` or equivalent | Every probe from the library appears in exactly one category (no orphans, no duplicates) |
+| G2 | Per-category aggregate trigger rate | Taxonomy file | Each category reports an aggregate trigger rate |
+| G3 | Per-category pattern description | Taxonomy file | Each category has a brief description of the shared failure pattern |
+| G4 | Target failure named | `target_failure_mode.md` | One specific failure mode is named |
+| G5 | Business cost in Tenacious numbers | `target_failure_mode.md` | Cost derived using Tenacious-specific numbers: ACV bands, stalled-thread rate, brand reputation implications, or conversion-rate impact |
+| G6 | Compared against ≥2 alternatives | `target_failure_mode.md` | Target compared against **at least two alternative** failure modes with explanation of why target wins on ROI |
+| G7 | Arithmetic shown | `target_failure_mode.md` | Business cost derivation shows the **arithmetic steps**, not just the conclusion |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+Taxonomy covers every probe without orphans or duplicates, with per-category aggregate rates and pattern descriptions (G1–G3). Target failure mode named with business-cost derivation in Tenacious numbers, compared against ≥2 alternatives, arithmetic shown (G4–G7).
+
+#### ⚠️ 3 — Correct but Incomplete
+Taxonomy exists and groups probes into categories, and target failure mode named with some business-cost framing. **Missing one or more of:** complete probe coverage without duplication, aggregate rates, numeric derivation, comparison against alternatives, or visible arithmetic.
+
+#### 🔴 1 — Present but Flawed
+At least one of the two files exists, but taxonomy is a flat list rather than a grouping, target failure asserted without derivation, or business cost framed in generic B2B terms rather than Tenacious-specific numbers.
+
+#### ⛔ 0 — Absent
+Neither file exists, or both are empty.
+
+### target_failure_mode.md Required Structure
+```markdown
+## Target Failure Mode: [Name]
+
+### Business Cost Derivation
+- Tenacious ACV band: $X–$Y
+- Stalled-thread rate for this failure: Z%
+- Expected annual impact: [arithmetic: e.g., 50 threads × 0.15 stall rate × $X ACV = $Y]
+- Brand/conversion-rate impact: [narrative]
+
+### Comparison Against Alternatives
+| Failure Mode | Annual Cost Estimate | Why Not Selected |
+|---|---|---|
+| Alternative A | $X | [reason] |
+| Alternative B | $Y | [reason] |
+| **Target** | **$Z** | **Highest ROI to fix** |
+
+### Selection Rationale
+[Why the target wins on ROI vs. alternatives]
+```
+
+### Agent TODO Template
+```
+[ ] G1: Map every probe_id from Criterion 6 to a taxonomy category — verify no orphans or duplicates
+[ ] G2: Compute and record aggregate trigger rate per category (average of probe trigger rates)
+[ ] G3: Write 1–2 sentence pattern description per category
+[ ] G4: Name one specific target failure mode in target_failure_mode.md
+[ ] G5: Derive cost using Tenacious numbers (ACV, stall rate, conversion rate)
+[ ] G6: Compare target against ≥2 alternative failure modes with ROI reasoning
+[ ] G7: Show the arithmetic steps explicitly (not just the final number)
+```
+
+---
+
+## Criterion 8 — Mechanism Design Documentation
+
+**What is being evaluated:** `method.md` as the design record for the original Act IV mechanism. No execution — purely documentation assessment.
+
+### Sub-Checks (all must pass for 5 pts)
+
+| ID | Sub-Check | Where to Look | Pass Condition |
+|----|-----------|--------------|----------------|
+| H1 | Re-implementability | `method.md` | Mechanism described at a level where an engineer could **re-implement it from the document alone** (no gaps requiring guesswork) |
+| H2 | Design rationale links to root cause | `method.md` | Explicitly links to the target failure mode, explaining why the mechanism addresses the **root cause** not just the surface symptom |
+| H3 | Hyperparameters enumerated | `method.md` | All thresholds and parameter values **actually used** are explicitly listed with their values |
+| H4 | Three ablation variants | `method.md` | Exactly **three variants** defined, each with explicit contrast to the main method (what was removed/changed, and what that tests) |
+| H5 | Statistical test plan | `method.md` | Described in prose, naming: the **test name**, the **comparison being made**, and the **p-value threshold** |
+
+### Score Tiers
+
+#### ✅ 5 — Robust and Complete
+Mechanism re-implementable from the document alone (H1). Design rationale links to target failure's root cause (H2). Hyperparameters and thresholds fully enumerated with actual values (H3). Three ablation variants defined with explicit contrasts (H4). Statistical-test plan named in prose (H5).
+
+#### ⚠️ 3 — Correct but Incomplete
+`method.md` describes the mechanism, its link to the target failure, and at least three ablations. **Missing one or more of:** sufficient depth for re-implementation, reasoned rationale, full hyperparameter enumeration, contrasted ablation variants, or prose statistical-test plan.
+
+#### 🔴 1 — Present but Flawed
+`method.md` exists with some description of the mechanism, but no design rationale, fewer than three ablations, hyperparameters absent, or no statistical framing present.
+
+#### ⛔ 0 — Absent
+No `method.md`, or the file is placeholder.
+
+### method.md Required Structure
+```markdown
+## Mechanism: [Name]
+
+### Overview
+[Description sufficient for re-implementation — no gaps]
+
+### Link to Target Failure Mode
+[Why this mechanism addresses the root cause of [target failure], not just its surface]
+
+### Hyperparameters
+| Parameter | Value | Description |
+|---|---|---|
+| threshold_X | 0.75 | [what it controls] |
+| window_days | 60 | [what it controls] |
+
+### Ablation Variants
+| Variant | What Changed | What This Tests |
+|---|---|---|
+| Ablation A | Removed [component X] | Whether [component X] is necessary |
+| Ablation B | Changed [parameter Y] to [value] | Sensitivity to [parameter Y] |
+| Ablation C | Replaced [method Z] with [baseline] | Whether [method Z] outperforms baseline |
+
+### Statistical Test Plan
+[Prose: "We will apply a [test name] comparing [group A] vs [group B] 
+on [metric], with a significance threshold of p < [value]."]
+```
+
+### Agent TODO Template
+```
+[ ] H1: Expand method.md so every step of the mechanism is described — no implementation ambiguity
+[ ] H2: Add explicit section: "Root Cause Link" explaining why mechanism addresses root cause of [target failure]
+[ ] H3: List every hyperparameter with its actual value (not placeholder)
+[ ] H4: Define exactly 3 ablation variants with: what changed + what it tests
+[ ] H5: Add statistical test plan in prose: name the test, the comparison, the p-value threshold
+```
+
+---
+
+## Final Scorecard Template (Agent Output)
+
+> Fill this out after each evaluation pass. Target: all 5s before submission.
+
+```markdown
+# Pre-Submission Scorecard
+
+| # | Criterion | Score | Missing Items |
+|---|-----------|-------|---------------|
+| 1 | Architecture and Inheritor Readiness | /5 | |
+| 2 | Multi-Channel Production Integration | /5 | |
+| 3 | Hiring Signal Enrichment Pipeline | /5 | |
+| 4 | AI Maturity Scoring System | /5 | |
+| 5 | Competitor Gap Brief Generation | /5 | |
+| 6 | Adversarial Probe Library | /5 | |
+| 7 | Failure Taxonomy and Target Failure Mode | /5 | |
+| 8 | Mechanism Design Documentation | /5 | |
+| | **TOTAL** | **/40** | |
+
+## Evidence Citations
+- Criterion 1: [file:line references]
+- Criterion 2: [file:line references]
+- ...
+
+## Remaining TODOs Before Resubmission
+1. 
+2. 
+3. 
+
+## Ready for Submission?
+[ ] All criteria score 5/5
+[ ] Total = 40/40
+[ ] All TODOs cleared
+```
+
+---
+
+## Agent Iteration Protocol
+
+```
+WHILE total_score < 40:
+  FOR criterion IN criteria:
+    score = evaluate(criterion)
+    IF score < 5:
+      todos = identify_missing_sub_checks(criterion)
+      implement(todos)
+      re_evaluate(criterion)
+  
+  IF no_progress_made_in_pass:
+    ESCALATE: "Manual review required — blocked on: [specific item]"
+
+OUTPUT final_scorecard with evidence citations
+ASSERT all scores == 5 before marking ready for submission
+```
+
+---
+
+*This rubric is the source of truth. When in doubt, re-read the sub-check pass conditions. A score of 5 requires **all** sub-checks to pass, not a majority.*

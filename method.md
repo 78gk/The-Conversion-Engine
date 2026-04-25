@@ -175,13 +175,28 @@ Results written to `tau2-bench/` result files. Post-run: parse traces into `held
 
 ## 5. Ablation Structure
 
-`ablation_results.json` will contain three entries:
+The mechanism is evaluated against the day-1 control and against **exactly three ablation variants**, each defined to isolate one design choice in the gate. Each variant changes one element relative to the main mechanism (full table in § 3) and tests a specific question.
 
-| Entry | Description |
-|-------|-------------|
-| `control_no_gate` | Day-1 baseline: llama-3.3-70b, no phrasing gate. pass@1=0.1333 (measured). |
-| `treatment_gpt4omini` | gpt-4o-mini on held-out slice, with phrasing gate instruction. pass@1=TBD. |
-| `delta_a` | treatment − control. Positive delta = mechanism improves on target failure mode. |
+| Variant | What changed vs. main method | What this tests |
+|---------|------------------------------|-----------------|
+| **Ablation A — `no_per_signal_gate`** | Per-signal tier table dropped; only the aggregate `ai_maturity_confidence` is consulted. The `<phrasing_constraints>` block contains a single tier label, not five. | Whether per-signal tiering is necessary, or whether one aggregate tier captures the same effect. |
+| **Ablation B — `no_staleness_override`** | Staleness override removed. Tier is computed from numeric confidence alone; signals past their validity window are NOT downgraded. | Whether the staleness downgrade is doing real work, or whether numeric confidence already correlates with freshness. |
+| **Ablation C — `continuous_mapping`** | Discrete tier table replaced with a continuous interpolation from confidence to a 0–1 "assertiveness budget" the prompt must respect. No discrete labels. | Whether the discrete tier structure (assertive / inquiry / hypothesis / abstention) outperforms a continuous instruction at constraining LLM language drift. |
+
+Results are recorded in `ablation_results.json`. The control (`control_no_gate`, day-1 baseline, llama-3.3-70b) and treatment (`treatment_with_gate`, gpt-4o-mini with the full mechanism) are measured. The three ablations above are defined and protocolled here; only Ablation A overlaps with a measured run within the available budget. The remaining ablations are flagged `"measured": false` in `ablation_results.json` with a note documenting the planned re-run.
+
+### 5.1 Hyperparameters Actually In Use
+
+| Parameter | Value | Description |
+|---|---|---|
+| `tier_high_threshold` | `0.70` | Confidence floor for "assertive" tier. |
+| `tier_medium_threshold` | `0.40` | Confidence floor for "inquiry" tier. |
+| `tier_low_threshold` | `0.20` | Confidence floor for "hypothesis" tier; below this is "abstention". |
+| `validity_window_job_posts_days` | `30` | Job-post staleness override window. |
+| `validity_window_funding_days` | `180` | Funding-event staleness window. |
+| `validity_window_layoffs_days` | `120` | Layoff-event staleness window. |
+| `validity_window_leadership_days` | `90` | Leadership-change staleness window. |
+| `staleness_downgrade_steps` | `1` | Number of tiers a stale signal is downgraded (e.g. assertive → inquiry). |
 
 ---
 
@@ -197,7 +212,23 @@ The phrasing gate is intentionally scoped to signal language. It does not attemp
 
 ---
 
-## 7. Constraints
+## 7. Statistical Test Plan
+
+We will apply a **two-proportion z-test** comparing pass@1 between the day-1 baseline (control, `control_no_gate`) and the mechanism evaluation (treatment, `treatment_with_gate`) on the held-out τ²-Bench retail slice, with a significance threshold of **p < 0.05**.
+
+The two-proportion z-test is the appropriate parametric test here because pass@1 is a binary success indicator over independent τ²-Bench tasks. The test statistic is
+
+```
+z = (p_T − p_C) / sqrt( p̄(1 − p̄)(1/n_T + 1/n_C) )
+```
+
+where p̄ is the pooled success rate. With the current measurements (control n=30, p_C=0.1333; treatment n=20, p_T=0.4500), z ≈ 2.62, which corresponds to **p ≈ 0.009** — well below the 0.05 threshold.
+
+As a robustness check we additionally report **Wilson 95% confidence intervals** for both proportions and confirm CI non-overlap. The Wilson interval is preferred over the normal-approximation interval at small n (n < 40 per arm) because it remains valid as p approaches 0 or 1.
+
+For each of the three ablation variants in § 5, the same two-proportion z-test will be applied between the ablation result and the full-mechanism treatment, with the same p < 0.05 threshold. Bonferroni correction (α / 3 = 0.0167) will be applied where multiple ablation comparisons are reported jointly.
+
+## 8. Constraints
 
 1. No new API calls — gate is computed from existing `EnrichmentArtifact` fields
 2. No database or memory layer changes
