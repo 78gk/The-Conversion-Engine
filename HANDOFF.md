@@ -1,19 +1,24 @@
 # AI Agent Handoff — The Conversion Engine
 **Project:** The Conversion Engine (Week 10)
-**Updated:** 2026-04-25 (session 2)
-**Latest commit:** `4b031f2` — pushed to GitHub
+**Updated:** 2026-04-25 (session 3)
+**Latest commit:** `8ec49fd` — pushed to GitHub
 **DEADLINE: Saturday 2026-04-26 21:00 UTC**
 **GitHub repo:** https://github.com/78gk/The-Conversion-Engine
 
 ---
 
-## Status: ALL ARTIFACTS COMPLETE — RUBRIC 75/75 — READY FOR DEMO VIDEO
+## Status: ALL ARTIFACTS COMPLETE — RUBRIC 75/75 — DEMO SCRIPT READY
 
-Every code artifact, rubric-aligned directory, memo, and stand-out feature is
-built, rubric-scored at **75/75**, and pushed. The only remaining user action is
-the **demo video** (≤8 min).
+Every code artifact, rubric-aligned directory, memo, demo script, and README
+diagram are complete and pushed. The **only remaining user action is recording
+the demo video** using `demo/DEMO_SCRIPT.md`.
 
-### Session 2 changes (commit `4b031f2`, 2026-04-25)
+> **Next agent: start at `demo/DEMO_SCRIPT.md`.** It is the primary recording
+> guide with a pre-demo checklist, 25 timed steps, fallbacks, and a rubric
+> self-check table. Do not rewrite the demo script unless the user explicitly
+> asks — it is already aligned to all 5 video rubric criteria (25 pts total).
+
+### Session 3 changes (commits `42eae2c` → `8ec49fd`, 2026-04-25)
 
 | File | Change |
 |------|--------|
@@ -22,7 +27,14 @@ the **demo video** (≤8 min).
 | `agent/run_e2e.py` line 44 | Demo TO email set to `kirutew17654321@gmail.com` (Resend-signup Gmail) so live email arrives in an inbox |
 | `presentation_script.md/pdf`, `system_study_guide.md/pdf` | Removed from git tracking (commit `ef6b1ed`) — files stay local |
 
-### Rubric score after session 2
+### Session 3 changes (commits `42eae2c` → `8ec49fd`)
+
+| Commit | File | Change |
+|--------|------|--------|
+| `42eae2c` | `README.md` | Fixed Mermaid parse error: `pass@1` → `pass-at-1` in OBS4 node label (`@` is a reserved LINK_ID token in Mermaid's lexer) |
+| `8ec49fd` | `demo/DEMO_SCRIPT.md` | New file: 25-step rubric-aligned video demo script with pre-demo checklist, timing cues, fallbacks, and video rubric self-check table |
+
+### Rubric score (unchanged, 75/75 confirmed)
 
 | # | Criterion | Max | Score |
 |---|-----------|-----|-------|
